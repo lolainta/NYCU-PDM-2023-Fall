@@ -15,6 +15,7 @@ class Projection(object):
         else:
             self.image = cv2.imread(image_path)
         self.height, self.width, self.channels = self.image.shape
+        self.points = points
 
     def top_to_front(self, theta=0, phi=0, gamma=0, dx=0, dy=0, dz=0, fov=90):
         """
@@ -22,8 +23,22 @@ class Projection(object):
         :return: New pixels on perspective(front) view image
         """
 
-        ### TODO ###
-        return new_pixels
+        def t2f(pts):
+            x, y = pts
+            h = 2.5
+            # print(x, y)
+            wx = (x / self.width) * 2 * h - h
+            wy = h - (y / self.height) * 2 * h
+            wz = 0
+            # print(wx, wy, wz)
+            nx = wx / wy
+            ny = (wz - 1) / wy
+            # print(nx, ny)
+            nx = (nx * 0.5 + 0.5) * self.width
+            ny = (0.5 - ny * 0.5) * self.height
+            return list(map(int, [nx, ny]))
+
+        return [t2f(pts) for pts in self.points]
 
     def show_image(
         self, new_pixels, img_name="projection.png", color=(0, 0, 255), alpha=0.4
