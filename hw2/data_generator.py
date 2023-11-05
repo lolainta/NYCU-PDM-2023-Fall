@@ -167,7 +167,7 @@ class Generator:
 
     @staticmethod
     def filename_from_frame_number(frame_number):
-        return f"{frame_number:05d}.png"
+        return f"_{frame_number:05d}.png"
 
     def load_scene_semantic_dict(self, scene):
         with open(
@@ -338,8 +338,14 @@ def main():
     # python data_generator.py --dataset [dataset folder] --output [output folder]
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, help="Folder containing Replica dataset")
-    parser.add_argument("--output", type=str, help="Output folder")
+    parser.add_argument(
+        "-d",
+        "--dataset",
+        type=str,
+        required=True,
+        help="Folder containing Replica dataset",
+    )
+    parser.add_argument("-o", "--output", type=str, required=True, help="Output folder")
     args = parser.parse_args()
 
     # adjust [frames_per_room] to collect arbitrary number of  images
