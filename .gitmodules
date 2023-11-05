@@ -1,3 +1,0 @@
-[submodule "hw2/semantic-segmentation-pytorch"]
-	path = hw2/semantic-segmentation-pytorch
-	url = git@github.com:lolainta/semantic-segmentation-pytorch.git
