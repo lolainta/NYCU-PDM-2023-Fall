@@ -1,9 +1,3 @@
-[submodule "hw0/habitat-lab"]
-	path = hw0/habitat-lab
-	url = git@github.com:facebookresearch/habitat-lab.git
-[submodule "hw0/habitat-sim"]
-	path = hw0/habitat-sim
-	url = git@github.com:facebookresearch/habitat-sim.git
 [submodule "hw2/semantic-segmentation-pytorch"]
 	path = hw2/semantic-segmentation-pytorch
 	url = git@github.com:lolainta/semantic-segmentation-pytorch.git
