@@ -88,7 +88,7 @@ if __name__ == "__main__":
         print("Generating odgts for mode: pred")
         os.makedirs(os.path.join(args.pred, "odgts"), exist_ok=True)
         img_dir = os.path.join(args.pred, "rgb")
-        odgt_list = gen_odgt_list(img_dir, rp=("rgb", "semantic"))
+        odgt_list = gen_odgt_list(img_dir, rp=("rgb", "annotations"))
         with open(os.path.join(args.pred, "odgts", "pred.odgt"), "w") as f:
             for odgt_dic in odgt_list:
                 f.write(str(odgt_dic).replace("'", '"') + "\n")
