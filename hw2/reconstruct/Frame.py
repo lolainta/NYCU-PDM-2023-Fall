@@ -19,6 +19,7 @@ intrinsic = get_intrinsic()
 class BaseFrameType(Enum):
     RGB = auto()
     SEMENTIC = auto()
+    SEMENTIC_PRED = auto()
 
 
 class Frame:
@@ -33,12 +34,16 @@ class Frame:
     ):
         self.id = id
         self.verbose = verbose
+
         self.rgb_path = f"{data_root}/rgb/{id+1}.png"
         self.sementic_path = f"{data_root}/semantic/{id+1}.png"
+        self.sementic_pred_path = f"{data_root}/semantic_pred/{id+1}.png"
         if img_type == BaseFrameType.SEMENTIC:
             self.img_path = self.sementic_path
         elif img_type == BaseFrameType.RGB:
             self.img_path = self.rgb_path
+        elif img_type == BaseFrameType.SEMENTIC_PRED:
+            self.img_path = self.sementic_pred_path
         self.depth_path = f"{data_root}/depth/{id+1}.png"
         self.voxel_size = voxel_size
         self.rgbd_img, self.pcd = self.depth_image_to_point_cloud()

@@ -51,7 +51,6 @@ def transform_semantic(semantic_obs):
 
 
 def save_semantic_observation(obs, out_path):
-
     def load_scene_semantic_dict(scene):
         with open(
             os.path.join("replica_v1", scene, "habitat", "info_semantic.json"),
@@ -231,7 +230,7 @@ if os.path.isdir(data_root):
         data_root
     )  # WARNING: this line will delete whole directory with files
 
-for sub_dir in ["rgb/", "depth/", "semantic/","annotations/"]:
+for sub_dir in ["rgb/", "depth/", "semantic/", "annotations/"]:
     os.makedirs(data_root + sub_dir)
 
 count = 0

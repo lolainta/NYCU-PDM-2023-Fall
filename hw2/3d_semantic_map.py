@@ -23,7 +23,6 @@ def reconstruct(args, init_pose):
     data_root = args.data_root
     n = len(os.listdir(os.path.join(data_root, "rgb")))
     assert n == len(os.listdir(os.path.join(data_root, "depth")))
-    # n = 20
     voxel_size = 3e-2
     voxel_down = custom_voxel_down if args.voxel_down == "custom" else o3d_voxel_down
 
@@ -32,13 +31,16 @@ def reconstruct(args, init_pose):
         Frame(
             id=i,
             data_root=data_root,
-            img_type=BaseFrameType.SEMENTIC,
+            img_type=BaseFrameType.SEMENTIC if args.gt else BaseFrameType.SEMENTIC_PRED,
             voxel_down=voxel_down,
             voxel_size=voxel_size,
-            verbose=True,
+            verbose=False,
         )
         for i in trange(0, 0 + n)
     ]
+    print(
+        f"Frames loaded from {os.path.realpath(frames[0].img_path)} to {os.path.realpath(frames[-1].img_path)}"
+    )
 
     acc_trans = [np.eye(4)]
     for i in trange(n - 1):
@@ -94,7 +96,7 @@ def reconstruct(args, init_pose):
         trans = deepcopy(trans)
         trans = tune(trans)
         acc_trans.append(trans)
-        tqdm.write(f"Register {i}-{i+1} {ratio}")
+        # tqdm.write(f"Register {i}-{i+1} {ratio}")
         # tqdm.write(str(trans))
     cam_pose = []
     cur = np.eye(4)
@@ -114,13 +116,15 @@ if __name__ == "__main__":
     start_time = datetime.now()
     print(start_time)
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--floor", type=int, default=1)
+    parser.add_argument("-f", "--floor", type=int, default=1, choices=[1, 2])
     parser.add_argument(
         "-v", "--version", type=str, default="my_icp", help="open3d or my_icp"
     )
-    parser.add_argument("--data_root", type=str, default="data_collection/first_floor/")
     parser.add_argument(
         "--voxel_down", type=str, default="custom", choices=["custom", "open3d"]
+    )
+    parser.add_argument(
+        "--gt", action="store_true", help="use ground truth semantic images"
     )
     args = parser.parse_args()
 
@@ -129,20 +133,21 @@ if __name__ == "__main__":
     elif args.floor == 2:
         args.data_root = "data_collection/second_floor/"
     data_root = args.data_root
+    if args.floor == 1:
+        init_pos = [0, 0.125, -0.25, -1, 0, 0, 0]
+    elif args.floor == 2:
+        init_pos = [-0.233, 2.925, -1.221, -1, 0, 0, 0]
 
-    result_pcd, result_traj, result_pos = reconstruct(
-        args, [0, 0.125, -0.25, -1, 0, 0, 0]
-    )
+    result_pcd, result_traj, result_pos = reconstruct(args, init_pos)
     end_time = datetime.now()
     print("Time: ", end_time - start_time)
 
     gt_cam_pose = np.load(os.path.join(data_root, "GT_pose.npy"))
     gt_cam_pose[:, 3] *= -1
     gt_cam_pose = gt_cam_pose[0 : 0 + len(result_pos)]
-    print(gt_cam_pose.shape, result_pos.shape)
-
-    for i in range(len(gt_cam_pose)):
-        print(gt_cam_pose[i], result_pos[i])
+    # print(gt_cam_pose.shape, result_pos.shape)
+    # for i in range(len(gt_cam_pose)):
+    #     print(gt_cam_pose[i], result_pos[i])
     m2d = np.mean(
         np.linalg.norm(gt_cam_pose[:, :3] - result_pos[:, :3])
         + np.linalg.norm(np.abs(gt_cam_pose[:, 3:]) - np.abs(result_pos[:, 3:]))
@@ -150,18 +155,22 @@ if __name__ == "__main__":
     print("Mean L2 distance: ", m2d)
     _, gt_traj = combine_pcd_from_pos(None, gt_cam_pose, [1, 0, 0])
 
+    if args.floor == 1:
+        lb, ub = -0.1, 0.9
+    elif args.floor == 2:
+        lb, ub = 0.8, 3.5
     box = o3d.geometry.OrientedBoundingBox.create_from_points(
         o3d.utility.Vector3dVector(
             np.array(
                 [
-                    [100, -3, 100],
-                    [100, -3, -100],
-                    [-100, -3, -100],
-                    [-100, -3, 100],
-                    [100, 0.9, 100],
-                    [100, 0.9, -100],
-                    [-100, 0.9, -100],
-                    [-100, 0.9, 100],
+                    [100, lb, 100],
+                    [100, lb, -100],
+                    [-100, lb, -100],
+                    [-100, lb, 100],
+                    [100, ub, 100],
+                    [100, ub, -100],
+                    [-100, ub, -100],
+                    [-100, ub, 100],
                 ]
             )
         )
