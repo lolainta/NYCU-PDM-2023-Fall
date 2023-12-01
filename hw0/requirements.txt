@@ -1,0 +1,3 @@
+cmake
+opencv-contrib-python
+open3d
