@@ -71,8 +71,8 @@ def main():
         fig.canvas.mpl_disconnect(cid)
         ax.cla()
         ax.scatter(point[:, 0], point[:, 2], c=col01, s=0.1)
-        ax.scatter(start[0], start[2], c="green", s=10)
-        ax.scatter(end[0], end[2], c="blue", s=10)
+        ax.scatter(start[0], start[2], c="green", s=20)
+        ax.scatter(end[0], end[2], c="blue", s=20)
         fig.show()
         ic(start, end)
         print("Press q to quit.")
@@ -89,10 +89,18 @@ def main():
     tar = Objects[option]
     print(f"Selected {option} as target object. Color: {tar.value}")
     end = None
-    for c, p in zip(col255, point):
-        if np.all(c == tar.value):
-            end = p
-            break
+    if option == "rack":
+        end = 3.5, 0, 3.8
+    elif option == "cushion":
+        end = 1.3, 0, 8.5
+    elif option == "lamp":
+        end = 0, 0, 4.3
+    elif option == "stair":
+        end = 5, 0, 7.5
+    elif option == "cooktop":
+        end = -0.8, 0, -1.5
+    else:
+        raise Exception("Invalid target object")
     print("Please click on the figure to select the start point.")
     fig.show()
     fig.waitforbuttonpress()
