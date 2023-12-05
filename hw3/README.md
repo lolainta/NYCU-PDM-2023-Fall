@@ -13,26 +13,26 @@ The directory should be look like this.
 
 ```
 .
-├── README.md
 ├── enums.py
+├── main.py
 ├── map.png
 ├── nav.py
 ├── pointcloud
-│   ├── color01.npy
-│   ├── color0255.npy
-│   └── point.npy
+│   ├── color01.npy
+│   ├── color0255.npy
+│   └── point.npy
+├── README.md
 ├── replica_v1 -> /data/replica_v1
 ├── results
-│   ├── *.mp4
-│   └── *.png
-├── semantic_3d_pointcloud
-│   ├── color01.npy
-│   ├── color0255.npy
-│   └── point.npy
-└── sol.py
+│   ├── *.mp4
+│   └── *.png
+└── semantic_3d_pointcloud
+    ├── color01.npy
+    ├── color0255.npy
+    └── point.npy
 ```
 
 ## Usage
 ```
-python3 sol.py
+python3 main.py
 ```
