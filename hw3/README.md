@@ -5,3 +5,34 @@ Spec: [Google Docs](https://docs.google.com/document/d/10vEbFE372HeNocKmyQws_-5D
 
 ## Preparation
 In your original dpm-f23 directory, `git pull` to get new `hw3` directory.
+
+
+## Requrirements
+
+The directory should be look like this.
+
+```
+.
+├── README.md
+├── enums.py
+├── map.png
+├── nav.py
+├── pointcloud
+│   ├── color01.npy
+│   ├── color0255.npy
+│   └── point.npy
+├── replica_v1 -> /data/replica_v1
+├── results
+│   ├── *.mp4
+│   └── *.png
+├── semantic_3d_pointcloud
+│   ├── color01.npy
+│   ├── color0255.npy
+│   └── point.npy
+└── sol.py
+```
+
+## Usage
+```
+python3 sol.py
+```
