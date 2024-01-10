@@ -72,11 +72,24 @@ def your_fk(DH_params: dict, q: list or tuple or np.ndarray, base_pos) -> np.nda
 
     #### your code ####
 
+    ts = [np.identity(4)]
+    for dh, q_i in zip(DH_params, q):
+        a, d, alpha = dh["a"], dh["d"], dh["alpha"]
+        t = np.array(
+            [
+                [np.cos(q_i), -np.sin(q_i) * np.cos(alpha), np.sin(q_i) * np.sin(alpha), a * np.cos(q_i)],
+                [np.sin(q_i), np.cos(q_i) * np.cos(alpha), -np.cos(q_i) * np.sin(alpha), a * np.sin(q_i)],
+                [0, np.sin(alpha), np.cos(alpha), d],
+                [0, 0, 0, 1]
+            ]
+        )
+        ts.append(ts[-1] @ t)
 
-    # A = ? # may be more than one line
-    # jacobian = ? # may be more than one line
+    A = A @ ts[-1]
+    for i in range(6):
+        jacobian[:3, i] = cross(ts[i][:3, 2], ts[-1][:3, 3] - ts[i][:3, 3])
+        jacobian[3:, i] = ts[i][:3, 2]
 
-    # raise NotImplementedError
     # hint :
     # https://automaticaddison.com/the-ultimate-guide-to-jacobian-matrices-for-robotics/
 
