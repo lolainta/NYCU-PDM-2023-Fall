@@ -3,8 +3,9 @@
 # LGPL-2.1+ license. See the accompanying LICENSE file for details.
 
 import os, inspect
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-os.sys.path.insert(0,currentdir)
+os.sys.path.insert(0, currentdir)
 
 import gym
 from gym import spaces
@@ -17,22 +18,31 @@ from pybullet_robot_envs.envs.utils import goal_distance, scale_gym_data
 
 
 class pandaPushGymGoalEnv(gym.GoalEnv, pandaPushGymEnv):
-    metadata = {'render.modes': ['human', 'rgb_array'],
-                'video.frames_per_second': 50}
+    metadata = {"render.modes": ["human", "rgb_array"], "video.frames_per_second": 50}
 
-    def __init__(self,
-                 numControlledJoints=7,
-                 use_IK=0,
-                 action_repeat=1,
-                 obj_name=get_objects_list()[1],
-                 renders=False,
-                 max_steps=1000,
-                 obj_pose_rnd_std=0, tg_pose_rnd_std=0.2,
-                 includeVelObs=True):
-
-        super().__init__(numControlledJoints, use_IK, action_repeat, obj_name,
-                                                 renders, max_steps, obj_pose_rnd_std, tg_pose_rnd_std,
-                                                 includeVelObs)
+    def __init__(
+        self,
+        numControlledJoints=7,
+        use_IK=0,
+        action_repeat=1,
+        obj_name=get_objects_list()[1],
+        renders=False,
+        max_steps=1000,
+        obj_pose_rnd_std=0,
+        tg_pose_rnd_std=0.2,
+        includeVelObs=True,
+    ):
+        super().__init__(
+            numControlledJoints,
+            use_IK,
+            action_repeat,
+            obj_name,
+            renders,
+            max_steps,
+            obj_pose_rnd_std,
+            tg_pose_rnd_std,
+            includeVelObs,
+        )
 
         # Define spaces
         self.observation_space, self.action_space = self.create_gym_spaces()
@@ -49,17 +59,27 @@ class pandaPushGymGoalEnv(gym.GoalEnv, pandaPushGymEnv):
         goal_obs = self.get_goal_observation()
 
         # Configure the observation space
-        observation_space = spaces.Dict(dict(
-            desired_goal=spaces.Box(-10, 10, shape=goal_obs['achieved_goal'].shape, dtype='float32'),
-            achieved_goal=spaces.Box(-10, 10, shape=goal_obs['achieved_goal'].shape, dtype='float32'),
-            observation=spaces.Box(np.array(observation_low), np.array(observation_high), dtype='float32'),
-        ))
+        observation_space = spaces.Dict(
+            dict(
+                desired_goal=spaces.Box(
+                    -10, 10, shape=goal_obs["achieved_goal"].shape, dtype="float32"
+                ),
+                achieved_goal=spaces.Box(
+                    -10, 10, shape=goal_obs["achieved_goal"].shape, dtype="float32"
+                ),
+                observation=spaces.Box(
+                    np.array(observation_low),
+                    np.array(observation_high),
+                    dtype="float32",
+                ),
+            )
+        )
 
         # Configure action space
         action_dim = self._robot.get_action_dim()
         action_bound = 1
         action_high = np.array([action_bound] * action_dim)
-        action_space = spaces.Box(-action_high, action_high, dtype='float32')
+        action_space = spaces.Box(-action_high, action_high, dtype="float32")
 
         return observation_space, action_space
 
@@ -72,8 +92,10 @@ class pandaPushGymGoalEnv(gym.GoalEnv, pandaPushGymEnv):
         self.debug_gui()
 
         obs = self.get_goal_observation()
-        scaled_obs = scale_gym_data(self.observation_space['observation'], obs['observation'])
-        obs['observation'] = scaled_obs
+        scaled_obs = scale_gym_data(
+            self.observation_space["observation"], obs["observation"]
+        )
+        obs["observation"] = scaled_obs
         return obs
 
     def get_goal_observation(self):
@@ -81,9 +103,9 @@ class pandaPushGymGoalEnv(gym.GoalEnv, pandaPushGymEnv):
         world_observation, _ = self._world.get_observation()
 
         return {
-            'observation': np.array(obs),
-            'achieved_goal': np.array(world_observation[:3]),
-            'desired_goal': np.array(self._target_pose),
+            "observation": np.array(obs),
+            "achieved_goal": np.array(world_observation[:3]),
+            "desired_goal": np.array(self._target_pose),
         }
 
     def step(self, action):
@@ -91,15 +113,17 @@ class pandaPushGymGoalEnv(gym.GoalEnv, pandaPushGymEnv):
         self.apply_action(action)
 
         obs = self.get_goal_observation()
-        scaled_obs = scale_gym_data(self.observation_space['observation'], obs['observation'])
-        obs['observation'] = scaled_obs
+        scaled_obs = scale_gym_data(
+            self.observation_space["observation"], obs["observation"]
+        )
+        obs["observation"] = scaled_obs
 
         info = {
-            'is_success': self._is_success(obs['achieved_goal'], obs['desired_goal']),
+            "is_success": self._is_success(obs["achieved_goal"], obs["desired_goal"]),
         }
 
-        done = self._termination() or info['is_success']
-        reward = self.compute_reward(obs['achieved_goal'], obs['desired_goal'], info)
+        done = self._termination() or info["is_success"]
+        reward = self.compute_reward(obs["achieved_goal"], obs["desired_goal"], info)
 
         return obs, reward, done, info
 
@@ -107,7 +131,7 @@ class pandaPushGymGoalEnv(gym.GoalEnv, pandaPushGymEnv):
         if self._env_step_counter > self._max_steps:
             return np.float32(1.0)
 
-        return np.float32(0.)
+        return np.float32(0.0)
 
     def _is_success(self, achieved_goal, goal):
         # Compute distance between goal and the achieved goal.

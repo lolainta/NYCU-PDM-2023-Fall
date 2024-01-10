@@ -3,9 +3,12 @@
 # LGPL-2.1+ license. See the accompanying LICENSE file for details.
 
 import os, inspect
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-#print(currentdir)
-parentdir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(currentdir)))))
+# print(currentdir)
+parentdir = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(currentdir))))
+)
 os.sys.path.insert(0, parentdir)
 print(parentdir)
 
@@ -39,13 +42,22 @@ policy_name = "pushing_policy"
 discreteAction = 0
 rend = True
 
-env = pandaPushGymEnvHER(urdfRoot=robot_data.getDataPath(), renders=rend, useIK=0,
-        isDiscrete=discreteAction, action_space = action_space,
-        fixedPositionObj = fixed, includeVelObs = True, object_position=1)
+env = pandaPushGymEnvHER(
+    urdfRoot=robot_data.getDataPath(),
+    renders=rend,
+    useIK=0,
+    isDiscrete=discreteAction,
+    action_space=action_space,
+    fixedPositionObj=fixed,
+    includeVelObs=True,
+    object_position=1,
+)
 
-goal_selection_strategy = 'future' # equivalent to GoalSelectionStrategy.FUTURE
+goal_selection_strategy = "future"  # equivalent to GoalSelectionStrategy.FUTURE
 # Wrap the model
-model = HER.load("../policies/PUSHING_TD3+HER_FIXED_POSITION_PHASE_1best_model.pkl", env=env)
+model = HER.load(
+    "../policies/PUSHING_TD3+HER_FIXED_POSITION_PHASE_1best_model.pkl", env=env
+)
 
 obs = env.reset()
 

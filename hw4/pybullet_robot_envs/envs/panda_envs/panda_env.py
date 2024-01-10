@@ -3,6 +3,7 @@
 # LGPL-2.1+ license. See the accompanying LICENSE file for details.
 
 import os, inspect
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 os.sys.path.insert(0, currentdir)
 
@@ -15,18 +16,30 @@ import math as m
 
 
 class pandaEnv:
-
     initial_positions = {
-        'panda_joint1': 0.0, 'panda_joint2': -0.54, 'panda_joint3': 0.0,
-        'panda_joint4': -2.6, 'panda_joint5': -0.30, 'panda_joint6': 2.0,
-        'panda_joint7': 1.0, 'panda_finger_joint1': 0.04, 'panda_finger_joint2': 0.04,
+        "panda_joint1": 0.0,
+        "panda_joint2": -0.54,
+        "panda_joint3": 0.0,
+        "panda_joint4": -2.6,
+        "panda_joint5": -0.30,
+        "panda_joint6": 2.0,
+        "panda_joint7": 1.0,
+        "panda_finger_joint1": 0.04,
+        "panda_finger_joint2": 0.04,
     }
 
-    def __init__(self, physicsClientId, use_IK=0, base_position=(-0.13, 0.13, 0.475), control_orientation=1, control_eu_or_quat=0,
-    # def __init__(self, physicsClientId, use_IK=0, base_position=(-0.13, 0.13, 0.525), control_orientation=1, control_eu_or_quat=0,
-    # def __init__(self, physicsClientId, use_IK=0, base_position=(-0.1, 0.25, 0.5), control_orientation=1, control_eu_or_quat=0,
-                 joint_action_space=9, includeVelObs=True):
-
+    def __init__(
+        self,
+        physicsClientId,
+        use_IK=0,
+        base_position=(-0.13, 0.13, 0.475),
+        control_orientation=1,
+        control_eu_or_quat=0,
+        # def __init__(self, physicsClientId, use_IK=0, base_position=(-0.13, 0.13, 0.525), control_orientation=1, control_eu_or_quat=0,
+        # def __init__(self, physicsClientId, use_IK=0, base_position=(-0.1, 0.25, 0.5), control_orientation=1, control_eu_or_quat=0,
+        joint_action_space=9,
+        includeVelObs=True,
+    ):
         self._physics_client_id = physicsClientId
         self._use_IK = use_IK
         self._control_orientation = control_orientation
@@ -46,12 +59,20 @@ class pandaEnv:
         self._num_dof = 7
         self._joint_name_to_ids = {}
         self.robot_id = None
-        
+
         # Load robot model
-        flags = p.URDF_ENABLE_CACHED_GRAPHICS_SHAPES | p.URDF_USE_INERTIA_FROM_FILE | p.URDF_USE_SELF_COLLISION
-        self.robot_id = p.loadURDF(os.path.join(franka_panda.get_data_path(), "panda_model.urdf"),
-                                   basePosition=self._base_position, useFixedBase=True, flags=flags,
-                                   physicsClientId=self._physics_client_id)
+        flags = (
+            p.URDF_ENABLE_CACHED_GRAPHICS_SHAPES
+            | p.URDF_USE_INERTIA_FROM_FILE
+            | p.URDF_USE_SELF_COLLISION
+        )
+        self.robot_id = p.loadURDF(
+            os.path.join(franka_panda.get_data_path(), "panda_model.urdf"),
+            basePosition=self._base_position,
+            useFixedBase=True,
+            flags=flags,
+            physicsClientId=self._physics_client_id,
+        )
 
         assert self.robot_id is not None, "Failed to load the panda model"
 
@@ -59,12 +80,15 @@ class pandaEnv:
         self.reset()
 
     def reset(self):
-
         # reset joints to home position
-        num_joints = p.getNumJoints(self.robot_id, physicsClientId=self._physics_client_id)
+        num_joints = p.getNumJoints(
+            self.robot_id, physicsClientId=self._physics_client_id
+        )
         idx = 0
         for i in range(num_joints):
-            joint_info = p.getJointInfo(self.robot_id, i, physicsClientId=self._physics_client_id)
+            joint_info = p.getJointInfo(
+                self.robot_id, i, physicsClientId=self._physics_client_id
+            )
             joint_name = joint_info[1].decode("UTF-8")
             joint_type = joint_info[2]
 
@@ -73,23 +97,35 @@ class pandaEnv:
 
                 self._joint_name_to_ids[joint_name] = i
 
-                p.resetJointState(self.robot_id, i, self.initial_positions[joint_name], physicsClientId=self._physics_client_id)
-                p.setJointMotorControl2(self.robot_id, i, p.POSITION_CONTROL,
-                                        targetPosition=self.initial_positions[joint_name],
-                                        positionGain=0.2, velocityGain=1.0,
-                                        physicsClientId=self._physics_client_id)
+                p.resetJointState(
+                    self.robot_id,
+                    i,
+                    self.initial_positions[joint_name],
+                    physicsClientId=self._physics_client_id,
+                )
+                p.setJointMotorControl2(
+                    self.robot_id,
+                    i,
+                    p.POSITION_CONTROL,
+                    targetPosition=self.initial_positions[joint_name],
+                    positionGain=0.2,
+                    velocityGain=1.0,
+                    physicsClientId=self._physics_client_id,
+                )
 
                 idx += 1
-        
 
         self.ll, self.ul, self.jr, self.rs = self.get_joint_ranges()
 
         if self._use_IK:
-
-            self._home_hand_pose = [0.2, 0.0, 0.8,
-                                    min(m.pi, max(-m.pi, m.pi)),
-                                    min(m.pi, max(-m.pi, 0)),
-                                    min(m.pi, max(-m.pi, 0))]
+            self._home_hand_pose = [
+                0.2,
+                0.0,
+                0.8,
+                min(m.pi, max(-m.pi, m.pi)),
+                min(m.pi, max(-m.pi, 0)),
+                min(m.pi, max(-m.pi, 0)),
+            ]
 
             self.apply_action(self._home_hand_pose)
             p.stepSimulation(physicsClientId=self._physics_client_id)
@@ -105,7 +141,11 @@ class pandaEnv:
         lower_limits, upper_limits, joint_ranges, rest_poses = [], [], [], []
 
         for joint_name in self._joint_name_to_ids.keys():
-            jointInfo = p.getJointInfo(self.robot_id, self._joint_name_to_ids[joint_name], physicsClientId=self._physics_client_id)
+            jointInfo = p.getJointInfo(
+                self.robot_id,
+                self._joint_name_to_ids[joint_name],
+                physicsClientId=self._physics_client_id,
+            )
 
             ll, ul = jointInfo[8:10]
             jr = ul - ll
@@ -151,8 +191,13 @@ class pandaEnv:
         observation_lim = []
 
         # Get state of the end-effector link
-        state = p.getLinkState(self.robot_id, self.end_eff_idx, computeLinkVelocity=1,
-                               computeForwardKinematics=1, physicsClientId=self._physics_client_id)
+        state = p.getLinkState(
+            self.robot_id,
+            self.end_eff_idx,
+            computeLinkVelocity=1,
+            computeForwardKinematics=1,
+            physicsClientId=self._physics_client_id,
+        )
 
         # ------------------------- #
         # --- Cartesian 6D pose --- #
@@ -191,11 +236,20 @@ class pandaEnv:
         # --- Joint poses --- #
         # ------------------- #
 
-        jointStates = p.getJointStates(self.robot_id, self._joint_name_to_ids.values(), physicsClientId=self._physics_client_id)
+        jointStates = p.getJointStates(
+            self.robot_id,
+            self._joint_name_to_ids.values(),
+            physicsClientId=self._physics_client_id,
+        )
         jointPoses = [x[0] for x in jointStates]
 
         observation.extend(list(jointPoses))
-        observation_lim.extend([[self.ll[i], self.ul[i]] for i in range(0, len(self._joint_name_to_ids.values()))])
+        observation_lim.extend(
+            [
+                [self.ll[i], self.ul[i]]
+                for i in range(0, len(self._joint_name_to_ids.values()))
+            ]
+        )
 
         return observation, observation_lim
 
@@ -207,17 +261,30 @@ class pandaEnv:
 
     def get_gripper_pos(self):
         action = [0, 0]
-        idx_fingers = [self._joint_name_to_ids['panda_finger_joint1'], self._joint_name_to_ids['panda_finger_joint2']]
-        action[0] = p.getJointState(self.robot_id, idx_fingers[0], physicsClientId=self._physics_client_id)[0]
-        action[1] = p.getJointState(self.robot_id, idx_fingers[1], physicsClientId=self._physics_client_id)[0]
+        idx_fingers = [
+            self._joint_name_to_ids["panda_finger_joint1"],
+            self._joint_name_to_ids["panda_finger_joint2"],
+        ]
+        action[0] = p.getJointState(
+            self.robot_id, idx_fingers[0], physicsClientId=self._physics_client_id
+        )[0]
+        action[1] = p.getJointState(
+            self.robot_id, idx_fingers[1], physicsClientId=self._physics_client_id
+        )[0]
 
         return action
 
     def apply_action_fingers(self, action, obj_id=None):
         # move finger joints in position control
-        assert len(action) == 2, ('finger joints are 2! The number of actions you passed is ', len(action))
+        assert len(action) == 2, (
+            "finger joints are 2! The number of actions you passed is ",
+            len(action),
+        )
 
-        idx_fingers = [self._joint_name_to_ids['panda_finger_joint1'], self._joint_name_to_ids['panda_finger_joint2']]
+        idx_fingers = [
+            self._joint_name_to_ids["panda_finger_joint1"],
+            self._joint_name_to_ids["panda_finger_joint2"],
+        ]
 
         # use object id to check contact force and eventually stop the finger motion
         if obj_id is not None:
@@ -225,35 +292,53 @@ class pandaEnv:
             # print("contact forces {}".format(forces))
 
             if forces[0] >= 30:
-                action[0] = p.getJointState(self.robot_id, idx_fingers[0], physicsClientId=self._physics_client_id)[0]
+                action[0] = p.getJointState(
+                    self.robot_id,
+                    idx_fingers[0],
+                    physicsClientId=self._physics_client_id,
+                )[0]
 
             if forces[1] >= 30:
-                action[1] = p.getJointState(self.robot_id, idx_fingers[1], physicsClientId=self._physics_client_id)[0]
+                action[1] = p.getJointState(
+                    self.robot_id,
+                    idx_fingers[1],
+                    physicsClientId=self._physics_client_id,
+                )[0]
 
         for i, idx in enumerate(idx_fingers):
-            p.setJointMotorControl2(self.robot_id,
-                                    idx,
-                                    p.POSITION_CONTROL,
-                                    targetPosition=action[i],
-                                    force=10,
-                                    maxVelocity=1,
-                                    physicsClientId=self._physics_client_id)
-    
+            p.setJointMotorControl2(
+                self.robot_id,
+                idx,
+                p.POSITION_CONTROL,
+                targetPosition=action[i],
+                force=10,
+                maxVelocity=1,
+                physicsClientId=self._physics_client_id,
+            )
 
     def apply_rotation_fingers(self, action):
-        idx_fingers = [self._joint_name_to_ids['panda_finger_joint1'], self._joint_name_to_ids['panda_finger_joint2']]
+        idx_fingers = [
+            self._joint_name_to_ids["panda_finger_joint1"],
+            self._joint_name_to_ids["panda_finger_joint2"],
+        ]
 
     def get_target_joint_conf(self, action):
         if not (len(action) == 3 or len(action) == 6 or len(action) == 7):
-            raise AssertionError('number of action commands must be \n- 3: (dx,dy,dz)'
-                                    '\n- 6: (dx,dy,dz,droll,dpitch,dyaw)'
-                                    '\n- 7: (dx,dy,dz,qx,qy,qz,w)'
-                                    '\ninstead it is: ', len(action))
+            raise AssertionError(
+                "number of action commands must be \n- 3: (dx,dy,dz)"
+                "\n- 6: (dx,dy,dz,droll,dpitch,dyaw)"
+                "\n- 7: (dx,dy,dz,qx,qy,qz,w)"
+                "\ninstead it is: ",
+                len(action),
+            )
 
         # --- Constraint end-effector pose inside the workspace --- #
         dx, dy, dz = action[:3]
-        new_pos = [dx, dy,
-                    min(self._workspace_lim[2][1], max(self._workspace_lim[2][0], dz))]
+        new_pos = [
+            dx,
+            dy,
+            min(self._workspace_lim[2][1], max(self._workspace_lim[2][0], dz)),
+        ]
 
         # if orientation is not under control, keep it fixed
         if not self._control_orientation:
@@ -263,9 +348,11 @@ class pandaEnv:
         elif len(action) == 6:
             droll, dpitch, dyaw = action[3:]
 
-            eu_orn = [min(m.pi, max(-m.pi, droll)),
-                        min(m.pi, max(-m.pi, dpitch)),
-                        min(m.pi, max(-m.pi, dyaw))]
+            eu_orn = [
+                min(m.pi, max(-m.pi, droll)),
+                min(m.pi, max(-m.pi, dpitch)),
+                min(m.pi, max(-m.pi, dyaw)),
+            ]
 
             new_quat_orn = p.getQuaternionFromEuler(eu_orn)
 
@@ -275,34 +362,45 @@ class pandaEnv:
 
         # otherwise, use current orientation
         else:
-            new_quat_orn = p.getLinkState(self.robot_id, self.end_eff_idx, physicsClientId=self._physics_client_id)[5]
+            new_quat_orn = p.getLinkState(
+                self.robot_id, self.end_eff_idx, physicsClientId=self._physics_client_id
+            )[5]
 
         # --- compute joint positions with IK --- #
-        jointPoses = p.calculateInverseKinematics(self.robot_id, self.end_eff_idx, new_pos, new_quat_orn,
-                                                    maxNumIterations=100,
-                                                    residualThreshold=.001,
-                                                    physicsClientId=self._physics_client_id)
-        return jointPoses # without gripper
-
+        jointPoses = p.calculateInverseKinematics(
+            self.robot_id,
+            self.end_eff_idx,
+            new_pos,
+            new_quat_orn,
+            maxNumIterations=100,
+            residualThreshold=0.001,
+            physicsClientId=self._physics_client_id,
+        )
+        return jointPoses  # without gripper
 
     def apply_action(self, action, max_vel=-1):
-
         if self._use_IK:
             # ------------------ #
             # --- IK control --- #
             # ------------------ #
 
             if not (len(action) == 3 or len(action) == 6 or len(action) == 7):
-                raise AssertionError('number of action commands must be \n- 3: (dx,dy,dz)'
-                                     '\n- 6: (dx,dy,dz,droll,dpitch,dyaw)'
-                                     '\n- 7: (dx,dy,dz,qx,qy,qz,w)'
-                                     '\ninstead it is: ', len(action))
+                raise AssertionError(
+                    "number of action commands must be \n- 3: (dx,dy,dz)"
+                    "\n- 6: (dx,dy,dz,droll,dpitch,dyaw)"
+                    "\n- 7: (dx,dy,dz,qx,qy,qz,w)"
+                    "\ninstead it is: ",
+                    len(action),
+                )
 
             # --- Constraint end-effector pose inside the workspace --- #
 
             dx, dy, dz = action[:3]
-            new_pos = [dx, dy,
-                       min(self._workspace_lim[2][1], max(self._workspace_lim[2][0], dz))]
+            new_pos = [
+                dx,
+                dy,
+                min(self._workspace_lim[2][1], max(self._workspace_lim[2][0], dz)),
+            ]
 
             # if orientation is not under control, keep it fixed
             if not self._control_orientation:
@@ -312,9 +410,11 @@ class pandaEnv:
             elif len(action) == 6:
                 droll, dpitch, dyaw = action[3:]
 
-                eu_orn = [min(m.pi, max(-m.pi, droll)),
-                          min(m.pi, max(-m.pi, dpitch)),
-                          min(m.pi, max(-m.pi, dyaw))]
+                eu_orn = [
+                    min(m.pi, max(-m.pi, droll)),
+                    min(m.pi, max(-m.pi, dpitch)),
+                    min(m.pi, max(-m.pi, dyaw)),
+                ]
 
                 new_quat_orn = p.getQuaternionFromEuler(eu_orn)
 
@@ -324,57 +424,77 @@ class pandaEnv:
 
             # otherwise, use current orientation
             else:
-                new_quat_orn = p.getLinkState(self.robot_id, self.end_eff_idx, physicsClientId=self._physics_client_id)[5]
+                new_quat_orn = p.getLinkState(
+                    self.robot_id,
+                    self.end_eff_idx,
+                    physicsClientId=self._physics_client_id,
+                )[5]
 
             # --- compute joint positions with IK --- #
-            jointPoses = p.calculateInverseKinematics(self.robot_id, self.end_eff_idx, new_pos, new_quat_orn,
-                                                      maxNumIterations=500,
-                                                      residualThreshold=.001,
-                                                      physicsClientId=self._physics_client_id)
+            jointPoses = p.calculateInverseKinematics(
+                self.robot_id,
+                self.end_eff_idx,
+                new_pos,
+                new_quat_orn,
+                maxNumIterations=500,
+                residualThreshold=0.001,
+                physicsClientId=self._physics_client_id,
+            )
 
             # --- set joint control --- #
             if max_vel == -1:
-
-                p.setJointMotorControlArray(bodyUniqueId=self.robot_id,
-                                            jointIndices=self._joint_name_to_ids.values(),
-                                            controlMode=p.POSITION_CONTROL,
-                                            targetPositions=jointPoses,
-                                            positionGains=[0.2] * len(jointPoses),
-                                            velocityGains=[1] * len(jointPoses),
-                                            physicsClientId=self._physics_client_id)
+                p.setJointMotorControlArray(
+                    bodyUniqueId=self.robot_id,
+                    jointIndices=self._joint_name_to_ids.values(),
+                    controlMode=p.POSITION_CONTROL,
+                    targetPositions=jointPoses,
+                    positionGains=[0.2] * len(jointPoses),
+                    velocityGains=[1] * len(jointPoses),
+                    physicsClientId=self._physics_client_id,
+                )
 
             else:
                 for i in range(self._num_dof):
-                    p.setJointMotorControl2(bodyUniqueId=self.robot_id,
-                                            jointIndex=i,
-                                            controlMode=p.POSITION_CONTROL,
-                                            targetPosition=jointPoses[i],
-                                            maxVelocity=max_vel,
-                                            physicsClientId=self._physics_client_id)
+                    p.setJointMotorControl2(
+                        bodyUniqueId=self.robot_id,
+                        jointIndex=i,
+                        controlMode=p.POSITION_CONTROL,
+                        targetPosition=jointPoses[i],
+                        maxVelocity=max_vel,
+                        physicsClientId=self._physics_client_id,
+                    )
 
         else:
             # --------------------- #
             # --- Joint control --- #
             # --------------------- #
 
-            assert len(action) == self.joint_action_space, ('number of motor commands differs from number of motor to control', len(action))
+            assert len(action) == self.joint_action_space, (
+                "number of motor commands differs from number of motor to control",
+                len(action),
+            )
 
             joint_idxs = tuple(self._joint_name_to_ids.values())
             for i, val in enumerate(action):
                 motor = joint_idxs[i]
                 new_motor_pos = min(self.ul[i], max(self.ll[i], val))
 
-                p.setJointMotorControl2(self.robot_id,
-                                        motor,
-                                        p.POSITION_CONTROL,
-                                        targetPosition=new_motor_pos,
-                                        positionGain=0.5, velocityGain=1.0,
-                                        physicsClientId=self._physics_client_id)
+                p.setJointMotorControl2(
+                    self.robot_id,
+                    motor,
+                    p.POSITION_CONTROL,
+                    targetPosition=new_motor_pos,
+                    positionGain=0.5,
+                    velocityGain=1.0,
+                    physicsClientId=self._physics_client_id,
+                )
 
     def check_collision(self, obj_id):
         # check if there is any collision with an object
 
-        contact_pts = p.getContactPoints(obj_id, self.robot_id, physicsClientId=self._physics_client_id)
+        contact_pts = p.getContactPoints(
+            obj_id, self.robot_id, physicsClientId=self._physics_client_id
+        )
 
         # check if the contact is on the fingertip(s)
         n_fingertips_contact, _ = self.check_contact_fingertips(obj_id)
@@ -384,24 +504,45 @@ class pandaEnv:
     def check_contact_fingertips(self, obj_id):
         # check if there is any contact on the internal part of the fingers, to control if they are correctly touching an object
 
-        idx_fingers = [self._joint_name_to_ids['panda_finger_joint1'], self._joint_name_to_ids['panda_finger_joint2']]
+        idx_fingers = [
+            self._joint_name_to_ids["panda_finger_joint1"],
+            self._joint_name_to_ids["panda_finger_joint2"],
+        ]
 
-        p0 = p.getContactPoints(obj_id, self.robot_id, linkIndexB=idx_fingers[0], physicsClientId=self._physics_client_id)
-        p1 = p.getContactPoints(obj_id, self.robot_id, linkIndexB=idx_fingers[1], physicsClientId=self._physics_client_id)
+        p0 = p.getContactPoints(
+            obj_id,
+            self.robot_id,
+            linkIndexB=idx_fingers[0],
+            physicsClientId=self._physics_client_id,
+        )
+        p1 = p.getContactPoints(
+            obj_id,
+            self.robot_id,
+            linkIndexB=idx_fingers[1],
+            physicsClientId=self._physics_client_id,
+        )
 
         p0_contact = 0
         p0_f = [0]
         if len(p0) > 0:
             # get cartesian position of the finger link frame in world coordinates
-            w_pos_f0 = p.getLinkState(self.robot_id, idx_fingers[0], physicsClientId=self._physics_client_id)[4:6]
+            w_pos_f0 = p.getLinkState(
+                self.robot_id, idx_fingers[0], physicsClientId=self._physics_client_id
+            )[4:6]
             f0_pos_w = p.invertTransform(w_pos_f0[0], w_pos_f0[1])
 
             for pp in p0:
                 # compute relative position of the contact point wrt the finger link frame
-                f0_pos_pp = p.multiplyTransforms(f0_pos_w[0], f0_pos_w[1], pp[6], f0_pos_w[1])
+                f0_pos_pp = p.multiplyTransforms(
+                    f0_pos_w[0], f0_pos_w[1], pp[6], f0_pos_w[1]
+                )
 
                 # check if contact in the internal part of finger
-                if f0_pos_pp[0][1] <= 0.001 and f0_pos_pp[0][2] < 0.055 and pp[8] > -0.005:
+                if (
+                    f0_pos_pp[0][1] <= 0.001
+                    and f0_pos_pp[0][2] < 0.055
+                    and pp[8] > -0.005
+                ):
                     p0_contact += 1
                     p0_f.append(pp[9])
 
@@ -410,15 +551,23 @@ class pandaEnv:
         p1_contact = 0
         p1_f = [0]
         if len(p1) > 0:
-            w_pos_f1 = p.getLinkState(self.robot_id, idx_fingers[1], physicsClientId=self._physics_client_id)[4:6]
+            w_pos_f1 = p.getLinkState(
+                self.robot_id, idx_fingers[1], physicsClientId=self._physics_client_id
+            )[4:6]
             f1_pos_w = p.invertTransform(w_pos_f1[0], w_pos_f1[1])
 
             for pp in p1:
                 # compute relative position of the contact point wrt the finger link frame
-                f1_pos_pp = p.multiplyTransforms(f1_pos_w[0], f1_pos_w[1], pp[6], f1_pos_w[1])
+                f1_pos_pp = p.multiplyTransforms(
+                    f1_pos_w[0], f1_pos_w[1], pp[6], f1_pos_w[1]
+                )
 
                 # check if contact in the internal part of finger
-                if f1_pos_pp[0][1] >= -0.001 and f1_pos_pp[0][2] < 0.055 and pp[8] > -0.005:
+                if (
+                    f1_pos_pp[0][1] >= -0.001
+                    and f1_pos_pp[0][2] < 0.055
+                    and pp[8] > -0.005
+                ):
                     p1_contact += 1
                     p1_f.append(pp[9])
 
@@ -437,21 +586,85 @@ class pandaEnv:
         p3 = [ws[0][1], ws[1][1], ws[2][0]]  # xmax,ymax
         p4 = [ws[0][0], ws[1][1], ws[2][0]]  # xmin,ymax
 
-        p.addUserDebugLine(p1, p2, lineColorRGB=[0, 0, 1], lineWidth=2.0, lifeTime=0, physicsClientId=self._physics_client_id)
-        p.addUserDebugLine(p2, p3, lineColorRGB=[0, 0, 1], lineWidth=2.0, lifeTime=0, physicsClientId=self._physics_client_id)
-        p.addUserDebugLine(p3, p4, lineColorRGB=[0, 0, 1], lineWidth=2.0, lifeTime=0, physicsClientId=self._physics_client_id)
-        p.addUserDebugLine(p4, p1, lineColorRGB=[0, 0, 1], lineWidth=2.0, lifeTime=0, physicsClientId=self._physics_client_id)
+        p.addUserDebugLine(
+            p1,
+            p2,
+            lineColorRGB=[0, 0, 1],
+            lineWidth=2.0,
+            lifeTime=0,
+            physicsClientId=self._physics_client_id,
+        )
+        p.addUserDebugLine(
+            p2,
+            p3,
+            lineColorRGB=[0, 0, 1],
+            lineWidth=2.0,
+            lifeTime=0,
+            physicsClientId=self._physics_client_id,
+        )
+        p.addUserDebugLine(
+            p3,
+            p4,
+            lineColorRGB=[0, 0, 1],
+            lineWidth=2.0,
+            lifeTime=0,
+            physicsClientId=self._physics_client_id,
+        )
+        p.addUserDebugLine(
+            p4,
+            p1,
+            lineColorRGB=[0, 0, 1],
+            lineWidth=2.0,
+            lifeTime=0,
+            physicsClientId=self._physics_client_id,
+        )
 
-        p.addUserDebugLine([0, 0, 0], [0.1, 0, 0], [1, 0, 0], parentObjectUniqueId=self.robot_id,
-                           parentLinkIndex=-1, physicsClientId=self._physics_client_id)
-        p.addUserDebugLine([0, 0, 0], [0, 0.1, 0], [0, 1, 0], parentObjectUniqueId=self.robot_id,
-                           parentLinkIndex=-1, physicsClientId=self._physics_client_id)
-        p.addUserDebugLine([0, 0, 0], [0, 0, 0.1], [0, 0, 1], parentObjectUniqueId=self.robot_id,
-                           parentLinkIndex=-1, physicsClientId=self._physics_client_id)
+        p.addUserDebugLine(
+            [0, 0, 0],
+            [0.1, 0, 0],
+            [1, 0, 0],
+            parentObjectUniqueId=self.robot_id,
+            parentLinkIndex=-1,
+            physicsClientId=self._physics_client_id,
+        )
+        p.addUserDebugLine(
+            [0, 0, 0],
+            [0, 0.1, 0],
+            [0, 1, 0],
+            parentObjectUniqueId=self.robot_id,
+            parentLinkIndex=-1,
+            physicsClientId=self._physics_client_id,
+        )
+        p.addUserDebugLine(
+            [0, 0, 0],
+            [0, 0, 0.1],
+            [0, 0, 1],
+            parentObjectUniqueId=self.robot_id,
+            parentLinkIndex=-1,
+            physicsClientId=self._physics_client_id,
+        )
 
-        p.addUserDebugLine([0, 0, 0], [0.1, 0, 0], [1, 0, 0], parentObjectUniqueId=self.robot_id,
-                           parentLinkIndex=self.end_eff_idx, physicsClientId=self._physics_client_id)
-        p.addUserDebugLine([0, 0, 0], [0, 0.1, 0], [0, 1, 0], parentObjectUniqueId=self.robot_id,
-                           parentLinkIndex=self.end_eff_idx, physicsClientId=self._physics_client_id)
-        p.addUserDebugLine([0, 0, 0], [0, 0, 0.1], [0, 0, 1], parentObjectUniqueId=self.robot_id,
-                           parentLinkIndex=self.end_eff_idx, physicsClientId=self._physics_client_id)
+        p.addUserDebugLine(
+            [0, 0, 0],
+            [0.1, 0, 0],
+            [1, 0, 0],
+            parentObjectUniqueId=self.robot_id,
+            parentLinkIndex=self.end_eff_idx,
+            physicsClientId=self._physics_client_id,
+        )
+        p.addUserDebugLine(
+            [0, 0, 0],
+            [0, 0.1, 0],
+            [0, 1, 0],
+            parentObjectUniqueId=self.robot_id,
+            parentLinkIndex=self.end_eff_idx,
+            physicsClientId=self._physics_client_id,
+        )
+        p.addUserDebugLine(
+            [0, 0, 0],
+            [0, 0, 0.1],
+            [0, 0, 1],
+            parentObjectUniqueId=self.robot_id,
+            parentLinkIndex=self.end_eff_idx,
+            physicsClientId=self._physics_client_id,
+        )

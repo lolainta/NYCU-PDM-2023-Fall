@@ -4,15 +4,15 @@ from time import time
 from .utils import INF, argmin, elapsed_time
 
 __all__ = [
-    'rrt_star',
-    'informed_rrt_star',
-    ]
+    "rrt_star",
+    "informed_rrt_star",
+]
 
 EPSILON = 1e-6
 PRINT_FREQUENCY = 100
 
-class OptimalNode(object):
 
+class OptimalNode(object):
     def __init__(self, config, parent=None, d=0, path=[], iteration=None):
         self.config = config
         self.parent = parent
@@ -73,7 +73,8 @@ class OptimalNode(object):
         #         env, self.config, self.parent.config, color=color)
 
     def __str__(self):
-        return self.__class__.__name__ + '(' + str(self.config) + ')'
+        return self.__class__.__name__ + "(" + str(self.config) + ")"
+
     __repr__ = __str__
 
 
@@ -85,10 +86,25 @@ def safe_path(sequence, collision):
         path.append(q)
     return path
 
+
 ##################################################
 
-def rrt_star(start, goal, distance_fn, sample_fn, extend_fn, collision_fn, radius,
-             max_time=INF, max_iterations=INF, goal_probability=.2, informed=True, verbose=False, draw_fn=None):
+
+def rrt_star(
+    start,
+    goal,
+    distance_fn,
+    sample_fn,
+    extend_fn,
+    collision_fn,
+    radius,
+    max_time=INF,
+    max_iterations=INF,
+    goal_probability=0.2,
+    informed=True,
+    verbose=False,
+    draw_fn=None,
+):
     """
     :param start: Start configuration - conf
     :param goal: End configuration - conf
@@ -109,22 +125,34 @@ def rrt_star(start, goal, distance_fn, sample_fn, extend_fn, collision_fn, radiu
         do_goal = goal_n is None and (iteration == 0 or random() < goal_probability)
         s = goal if do_goal else sample_fn()
         # Informed RRT*
-        if informed and (goal_n is not None) and (distance_fn(start, s) + distance_fn(s, goal) >= goal_n.cost):
+        if (
+            informed
+            and (goal_n is not None)
+            and (distance_fn(start, s) + distance_fn(s, goal) >= goal_n.cost)
+        ):
             continue
         if iteration % PRINT_FREQUENCY == 0:
             success = goal_n is not None
             cost = goal_n.cost if success else INF
             if verbose:
-                print('Iteration: {} | Time: {:.3f} | Success: {} | {} | Cost: {:.3f}'.format(
-                    iteration, elapsed_time(start_time), success, do_goal, cost))
+                print(
+                    "Iteration: {} | Time: {:.3f} | Success: {} | {} | Cost: {:.3f}".format(
+                        iteration, elapsed_time(start_time), success, do_goal, cost
+                    )
+                )
         iteration += 1
 
         nearest = argmin(lambda n: distance_fn(n.config, s), nodes)
         path = safe_path(extend_fn(nearest.config, s), collision_fn)
         if len(path) == 0:
             continue
-        new = OptimalNode(path[-1], parent=nearest, d=distance_fn(
-            nearest.config, path[-1]), path=path[:-1], iteration=iteration)
+        new = OptimalNode(
+            path[-1],
+            parent=nearest,
+            d=distance_fn(nearest.config, path[-1]),
+            path=path[:-1],
+            iteration=iteration,
+        )
         # if safe and do_goal:
         if do_goal and (distance_fn(new.config, goal) < EPSILON):
             goal_n = new
@@ -156,5 +184,18 @@ def rrt_star(start, goal, distance_fn, sample_fn, extend_fn, collision_fn, radiu
         return None
     return goal_n.retrace()
 
-def informed_rrt_star(start, goal, distance_fn, sample_fn, extend_fn, collision_fn, radius, **kwargs):
-    return rrt_star(start, goal, distance_fn, sample_fn, extend_fn, collision_fn, radius, informed=True, **kwargs)
+
+def informed_rrt_star(
+    start, goal, distance_fn, sample_fn, extend_fn, collision_fn, radius, **kwargs
+):
+    return rrt_star(
+        start,
+        goal,
+        distance_fn,
+        sample_fn,
+        extend_fn,
+        collision_fn,
+        radius,
+        informed=True,
+        **kwargs
+    )

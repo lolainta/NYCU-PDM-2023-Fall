@@ -3,18 +3,22 @@ from random import shuffle
 from itertools import islice
 from collections import deque
 import time
-from pybullet_planning.interfaces.env_manager.pose_transformation import get_difference, get_unit_vector
+from pybullet_planning.interfaces.env_manager.pose_transformation import (
+    get_difference,
+    get_unit_vector,
+)
 
 __all__ = [
-    'compute_path_cost',
+    "compute_path_cost",
 ]
 
-INF = float('inf')
+INF = float("inf")
 
 # default RRT configurations
 RRT_ITERATIONS = 5000
 RRT_RESTARTS = 1
 RRT_SMOOTHING = 100
+
 
 def irange(start, stop=None, step=1):  # np.arange
     if stop is None:
@@ -47,29 +51,34 @@ def merge_dicts(*args):
     return result
     # return dict(reduce(operator.add, [d.items() for d in args]))
 
+
 def flatten(iterable_of_iterables):
     return (item for iterables in iterable_of_iterables for item in iterables)
+
 
 def randomize(sequence):
     shuffle(sequence)
     return sequence
 
+
 def bisect(sequence):
     sequence = list(sequence)
     indices = set()
-    queue = deque([(0, len(sequence)-1)])
+    queue = deque([(0, len(sequence) - 1)])
     while queue:
         lower, higher = queue.popleft()
         if lower > higher:
             continue
-        index = int((lower + higher) / 2.)
+        index = int((lower + higher) / 2.0)
         assert index not in indices
-        #if is_even(higher - lower):
+        # if is_even(higher - lower):
         yield sequence[index]
-        queue.extend([
-            (lower, index-1),
-            (index+1, higher),
-        ])
+        queue.extend(
+            [
+                (lower, index - 1),
+                (index + 1, higher),
+            ]
+        )
 
 
 def take(iterable, n=INF):
@@ -82,13 +91,16 @@ def take(iterable, n=INF):
 
 def enum(*sequential, **named):
     enums = dict(zip(sequential, range(len(sequential))), **named)
-    enums['names'] = sorted(enums.keys(), key=lambda k: enums[k])
-    return type('Enum', (), enums)
+    enums["names"] = sorted(enums.keys(), key=lambda k: enums[k])
+    return type("Enum", (), enums)
+
 
 def elapsed_time(start_time):
     return time.time() - start_time
 
+
 ######################################
+
 
 def inf_sequence():
     return iter(int, 1)
@@ -115,20 +127,20 @@ def compute_path_cost(path, cost_fn):
 
 
 def remove_redundant(path, tolerance=1e-3):
-    """Remove redundant waypoints in a given path if consecutive points are too close under L2 norm.
-    """
+    """Remove redundant waypoints in a given path if consecutive points are too close under L2 norm."""
     assert path
     new_path = [path[0]]
     for conf in path[1:]:
         difference = np.array(new_path[-1]) - np.array(conf)
-        if not np.allclose(np.zeros(len(difference)), difference, atol=tolerance, rtol=0):
+        if not np.allclose(
+            np.zeros(len(difference)), difference, atol=tolerance, rtol=0
+        ):
             new_path.append(conf)
     return new_path
 
 
 def waypoints_from_path(path, difference_fn=None, tolerance=1e-3):
-    """Remove redundant waypoints in a given path if consecutive points are too close under L2 norm.
-    """
+    """Remove redundant waypoints in a given path if consecutive points are too close under L2 norm."""
     difference_fn = difference_fn or get_difference
     path = remove_redundant(path, tolerance=tolerance)
     if len(path) < 2:
@@ -148,9 +160,11 @@ def waypoints_from_path(path, difference_fn=None, tolerance=1e-3):
 
 
 def convex_combination(x, y, w=0.5):
-    return (1-w)*np.array(x) + w*np.array(y)
+    return (1 - w) * np.array(x) + w * np.array(y)
+
 
 ##################################################
+
 
 def forward_selector(path):
     return path

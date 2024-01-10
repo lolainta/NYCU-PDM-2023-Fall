@@ -6,13 +6,25 @@ from .rrt import TreeNode, configs
 from .utils import irange, RRT_ITERATIONS, INF, elapsed_time
 
 __all__ = [
-    'rrt_connect',
-    'birrt',
-    ]
+    "rrt_connect",
+    "birrt",
+]
 
-def rrt_connect(q1, q2, distance_fn, sample_fn, extend_fn, collision_fn,
-                max_iterations=RRT_ITERATIONS, max_time=INF, verbose=True,
-                draw_fn=None, enforce_alternate=False, **kwargs):
+
+def rrt_connect(
+    q1,
+    q2,
+    distance_fn,
+    sample_fn,
+    extend_fn,
+    collision_fn,
+    max_iterations=RRT_ITERATIONS,
+    max_time=INF,
+    verbose=True,
+    draw_fn=None,
+    enforce_alternate=False,
+    **kwargs
+):
     """RRT connect algorithm: http://www.kuffner.org/james/papers/kuffner_icra2000.pdf
 
     Parameters
@@ -72,10 +84,18 @@ def rrt_connect(q1, q2, distance_fn, sample_fn, extend_fn, collision_fn,
             # draw samples
             draw_fn(target, [])
 
-        last1, _ = extend_towards(tree1, target, distance_fn, extend_fn, collision_fn,
-                                  swap, **kwargs)
-        last2, success = extend_towards(tree2, last1.config, distance_fn, extend_fn, collision_fn,
-                                        not swap, **kwargs)
+        last1, _ = extend_towards(
+            tree1, target, distance_fn, extend_fn, collision_fn, swap, **kwargs
+        )
+        last2, success = extend_towards(
+            tree2,
+            last1.config,
+            distance_fn,
+            extend_fn,
+            collision_fn,
+            not swap,
+            **kwargs
+        )
 
         if draw_fn:
             for sp1, sp2 in zip(tree1, tree2):
@@ -87,16 +107,26 @@ def rrt_connect(q1, q2, distance_fn, sample_fn, extend_fn, collision_fn,
             if swap:
                 path1, path2 = path2, path1
             if verbose:
-                print('[Results]|Iterations {}|Nodes {}|Time {}'.format(iteration, len(nodes1) + len(nodes2), elapsed_time(start_time)))
+                print(
+                    "[Results]|Iterations {}|Nodes {}|Time {}".format(
+                        iteration, len(nodes1) + len(nodes2), elapsed_time(start_time)
+                    )
+                )
                 sys.stdout.flush()
             nodes1.extend(nodes2)
             return configs(path1[:-1] + path2[::-1]), nodes1
     if verbose:
-        print('[Results]|Iterations {}|Nodes {}|Time {}'.format(max_iterations - 1, len(nodes1) + len(nodes2), elapsed_time(start_time)))
+        print(
+            "[Results]|Iterations {}|Nodes {}|Time {}".format(
+                max_iterations - 1, len(nodes1) + len(nodes2), elapsed_time(start_time)
+            )
+        )
         sys.stdout.flush()
     return None, None
 
+
 #################################################################
+
 
 def birrt(start, goal, distance_fn, sample_fn, extend_fn, collision_fn, **kwargs):
     """
@@ -110,8 +140,18 @@ def birrt(start, goal, distance_fn, sample_fn, extend_fn, collision_fn, **kwargs
     :return: Path [q', ..., q"] or None if unable to find a solution
     """
     from .meta import random_restarts
-    solutions, nodess = random_restarts(rrt_connect, start, goal, distance_fn, sample_fn, extend_fn, collision_fn,
-                                max_solutions=1, **kwargs)
+
+    solutions, nodess = random_restarts(
+        rrt_connect,
+        start,
+        goal,
+        distance_fn,
+        sample_fn,
+        extend_fn,
+        collision_fn,
+        max_solutions=1,
+        **kwargs
+    )
     if not solutions:
         return None, None
     return solutions[0], nodess[0]

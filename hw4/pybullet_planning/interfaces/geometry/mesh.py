@@ -9,19 +9,22 @@ from pybullet_planning.utils import ensure_dir, write, read, safe_zip
 #####################################
 # Mesh Files
 
-Mesh = namedtuple('Mesh', ['vertices', 'faces'])
+Mesh = namedtuple("Mesh", ["vertices", "faces"])
 mesh_count = count()
+
 
 def create_mesh(mesh, under=True, **kwargs):
     # http://people.sc.fsu.edu/~jburkardt/data/obj/obj.html
     # TODO: read OFF / WRL / OBJ files
     # TODO: maintain dict to file
     from pybullet_planning.interfaces.env_manager.shape_creation import create_obj
+
     ensure_dir(TEMP_DIR)
-    path = os.path.join(TEMP_DIR, 'mesh{}.obj'.format(next(mesh_count)))
+    path = os.path.join(TEMP_DIR, "mesh{}.obj".format(next(mesh_count)))
     write(path, obj_file_from_mesh(mesh, under=under))
     return create_obj(path, **kwargs)
-    #safe_remove(path) # TODO: removing might delete mesh?
+    # safe_remove(path) # TODO: removing might delete mesh?
+
 
 def obj_file_from_mesh(mesh, under=True):
     """
@@ -30,17 +33,18 @@ def obj_file_from_mesh(mesh, under=True):
     :return: *.obj mesh string
     """
     vertices, faces = mesh
-    s = 'g Mesh\n' # TODO: string writer
+    s = "g Mesh\n"  # TODO: string writer
     for v in vertices:
-        assert(len(v) == 3)
-        s += '\nv {}'.format(' '.join(map(str, v)))
+        assert len(v) == 3
+        s += "\nv {}".format(" ".join(map(str, v)))
     for f in faces:
-        #assert(len(f) == 3) # Not necessarily true
-        f = [i+1 for i in f] # Assumes mesh is indexed from zero
-        s += '\nf {}'.format(' '.join(map(str, f)))
+        # assert(len(f) == 3) # Not necessarily true
+        f = [i + 1 for i in f]  # Assumes mesh is indexed from zero
+        s += "\nf {}".format(" ".join(map(str, f)))
         if under:
-            s += '\nf {}'.format(' '.join(map(str, reversed(f))))
+            s += "\nf {}".format(" ".join(map(str, reversed(f))))
     return s
+
 
 def get_connected_components(vertices, edges):
     undirected_edges = defaultdict(set)
@@ -57,13 +61,14 @@ def get_connected_components(vertices, edges):
         queue = deque([v0])
         while queue:
             v1 = queue.popleft()
-            for v2 in (undirected_edges[v1] - processed):
+            for v2 in undirected_edges[v1] - processed:
                 processed.add(v2)
                 cluster.add(v2)
                 queue.append(v2)
-        if cluster: # preserves order
+        if cluster:  # preserves order
             clusters.append(frozenset(cluster))
     return clusters
+
 
 def read_obj(path, decompose=True):
     """Read meshes from an obj file.
@@ -88,37 +93,39 @@ def read_obj(path, decompose=True):
     meshes = {}
     vertices = []
     faces = []
-    for line in read(path).split('\n'):
+    for line in read(path).split("\n"):
         tokens = line.split()
         if not tokens:
             continue
-        if tokens[0] == 'o':
+        if tokens[0] == "o":
             # separate different components (groups)
             name = tokens[1]
             mesh = Mesh([], [])
             meshes[name] = mesh
-        elif tokens[0] == 'v':
+        elif tokens[0] == "v":
             vertex = tuple(map(float, tokens[1:4]))
             vertices.append(vertex)
-        elif tokens[0] in ('vn', 's'):
+        elif tokens[0] in ("vn", "s"):
             pass
-        elif tokens[0] == 'f':
-            face = tuple(int(token.split('/')[0]) - 1 for token in tokens[1:])
+        elif tokens[0] == "f":
+            face = tuple(int(token.split("/")[0]) - 1 for token in tokens[1:])
             faces.append(face)
             mesh.faces.append(face)
     if not decompose:
         return Mesh(vertices, faces)
     if not meshes:
-       meshes[None] = mesh
-    #new_meshes = {}
+        meshes[None] = mesh
+    # new_meshes = {}
     # TODO: make each triangle a separate object
     for name, mesh in meshes.items():
         indices = sorted({i for face in mesh.faces for i in face})
         mesh.vertices[:] = [vertices[i] for i in indices]
         new_index_from_old = {i2: i1 for i1, i2 in enumerate(indices)}
-        mesh.faces[:] = [tuple(new_index_from_old[i1] for i1 in face) for face in mesh.faces]
-        #edges = {edge for face in mesh.faces for edge in get_face_edges(face)}
-        #for k, cluster in enumerate(get_connected_components(indices, edges)):
+        mesh.faces[:] = [
+            tuple(new_index_from_old[i1] for i1 in face) for face in mesh.faces
+        ]
+        # edges = {edge for face in mesh.faces for edge in get_face_edges(face)}
+        # for k, cluster in enumerate(get_connected_components(indices, edges)):
         #    new_name = '{}#{}'.format(name, k)
         #    new_indices = sorted(cluster)
         #    new_vertices = [vertices[i] for i in new_indices]
@@ -131,15 +138,15 @@ def read_obj(path, decompose=True):
 
 def transform_obj_file(obj_string, transformation):
     new_lines = []
-    for line in obj_string.split('\n'):
+    for line in obj_string.split("\n"):
         tokens = line.split()
-        if not tokens or (tokens[0] != 'v'):
+        if not tokens or (tokens[0] != "v"):
             new_lines.append(line)
             continue
         vertex = list(map(float, tokens[1:]))
         transformed_vertex = transformation.dot(vertex)
-        new_lines.append('v {}'.format(' '.join(map(str, transformed_vertex))))
-    return '\n'.join(new_lines)
+        new_lines.append("v {}".format(" ".join(map(str, transformed_vertex))))
+    return "\n".join(new_lines)
 
 
 def read_mesh_off(path, scale=1.0):
@@ -149,11 +156,14 @@ def read_mesh_off(path, scale=1.0):
     :return: tuple of list of vertices and list of faces
     """
     with open(path) as f:
-        assert (f.readline().split()[0] == 'OFF'), 'Not OFF file'
+        assert f.readline().split()[0] == "OFF", "Not OFF file"
         nv, nf, ne = [int(x) for x in f.readline().split()]
-        verts = [tuple(scale * float(v) for v in f.readline().split()) for _ in range(nv)]
+        verts = [
+            tuple(scale * float(v) for v in f.readline().split()) for _ in range(nv)
+        ]
         faces = [tuple(map(int, f.readline().split()[1:])) for _ in range(nf)]
         return Mesh(verts, faces)
+
 
 #####################################
 
@@ -211,8 +221,10 @@ def readWrl(filename, name='wrlObj', scale=1.0, color='black'):
 
 # Convex Hulls
 
+
 def convex_hull(points):
     from scipy.spatial import ConvexHull
+
     # TODO: cKDTree is faster, but KDTree can do all pairs closest
     hull = ConvexHull(points)
     new_indices = {i: ni for ni, i in enumerate(hull.vertices)}
@@ -220,22 +232,27 @@ def convex_hull(points):
     faces = np.vectorize(lambda i: new_indices[i])(hull.simplices)
     return Mesh(vertices.tolist(), faces.tolist())
 
+
 def convex_signed_area(vertices):
     if len(vertices) < 3:
-        return 0.
+        return 0.0
     vertices = [np.array(v[:2]) for v in vertices]
     segments = safe_zip(vertices, vertices[1:] + vertices[:1])
-    return sum(np.cross(v1, v2) for v1, v2 in segments) / 2.
+    return sum(np.cross(v1, v2) for v1, v2 in segments) / 2.0
+
 
 def convex_area(vertices):
     return abs(convex_signed_area(vertices))
+
 
 def convex_centroid(vertices):
     # TODO: also applies to non-overlapping polygons
     vertices = [np.array(v[:2]) for v in vertices]
     segments = list(safe_zip(vertices, vertices[1:] + vertices[:1]))
-    return sum((v1 + v2)*np.cross(v1, v2) for v1, v2 in segments) \
-           / (6.*convex_signed_area(vertices))
+    return sum((v1 + v2) * np.cross(v1, v2) for v1, v2 in segments) / (
+        6.0 * convex_signed_area(vertices)
+    )
+
 
 def mesh_from_points(points):
     vertices, indices = convex_hull(points)
@@ -250,20 +267,28 @@ def mesh_from_points(points):
         new_indices.append(tuple(triplet))
     return Mesh(vertices.tolist(), new_indices)
 
+
 def rectangular_mesh(width, length):
     # TODO: 2.5d polygon
-    extents = np.array([width, length, 0])/2.
+    extents = np.array([width, length, 0]) / 2.0
     unit_corners = [(-1, -1), (+1, -1), (+1, +1), (-1, +1)]
-    vertices = [np.append(c, [0])*extents for c in unit_corners]
+    vertices = [np.append(c, [0]) * extents for c in unit_corners]
     faces = [(0, 1, 2), (2, 3, 0)]
     return Mesh(vertices, faces)
 
+
 def tform_mesh(affine, mesh):
-    from pybullet_planning.interfaces.env_manager.pose_transformation import apply_affine
+    from pybullet_planning.interfaces.env_manager.pose_transformation import (
+        apply_affine,
+    )
+
     return Mesh(apply_affine(affine, mesh.vertices), mesh.faces)
 
+
 def grow_polygon(vertices, radius, n=8):
-    from pybullet_planning.interfaces.env_manager.pose_transformation import unit_from_theta
+    from pybullet_planning.interfaces.env_manager.pose_transformation import (
+        unit_from_theta,
+    )
 
     vertices2d = [vertex[:2] for vertex in vertices]
     if not vertices2d:
@@ -272,6 +297,6 @@ def grow_polygon(vertices, radius, n=8):
     for vertex in convex_hull(vertices2d).vertices:
         points.append(vertex)
         if 0 < radius:
-            for theta in np.linspace(0, 2*PI, num=n, endpoint=False):
-                points.append(vertex + radius*unit_from_theta(theta))
+            for theta in np.linspace(0, 2 * PI, num=n, endpoint=False):
+                points.append(vertex + radius * unit_from_theta(theta))
     return convex_hull(points).vertices

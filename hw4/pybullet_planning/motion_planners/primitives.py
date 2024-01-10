@@ -8,14 +8,22 @@ ASYMETRIC = True
 
 def asymmetric_extend(q1, q2, extend_fn, backward=False):
     if backward and ASYMETRIC:
-        return reversed(list(extend_fn(q2, q1))) # Forward model
+        return reversed(list(extend_fn(q2, q1)))  # Forward model
     return extend_fn(q1, q2)
 
 
-def extend_towards(tree, target, distance_fn, extend_fn, collision_fn, swap=False, tree_frequency=2,
-        sweep_collision_fn=None, **kwargs):
-    """Takes current tree and extend it towards a new node (`target`).
-    """
+def extend_towards(
+    tree,
+    target,
+    distance_fn,
+    extend_fn,
+    collision_fn,
+    swap=False,
+    tree_frequency=2,
+    sweep_collision_fn=None,
+    **kwargs
+):
+    """Takes current tree and extend it towards a new node (`target`)."""
     assert tree_frequency >= 1
     # the nearest node in the tree to the target
     # the segments by connecting last to the target using the given extend fn
@@ -43,11 +51,14 @@ def extend_towards(tree, target, distance_fn, extend_fn, collision_fn, swap=Fals
     success = len(extend) == len(safe)
     return last, success
 
+
 ##################################
+
 
 def distance_fn_from_extend_fn(extend_fn):
     # TODO: can compute cost between waypoints from extend_fn
     def distance_fn(q1, q2):
-        path = list(extend_fn(q1, q2)) # TODO: cache
-        return len(path) # TODO: subtract endpoints?
+        path = list(extend_fn(q1, q2))  # TODO: cache
+        return len(path)  # TODO: subtract endpoints?
+
     return distance_fn

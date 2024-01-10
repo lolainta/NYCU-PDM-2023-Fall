@@ -1,7 +1,7 @@
 """unified entry API for calling different planners
 """
 import time
-import sys 
+import sys
 
 from .lattice import lattice
 from .lazy_prm import lazy_prm
@@ -12,10 +12,22 @@ from .rrt_star import rrt_star
 
 from .utils import INF
 from .smoothing import smooth_path
-from .utils import RRT_RESTARTS, RRT_SMOOTHING, INF, irange, elapsed_time, compute_path_cost, default_selector, get_pairs, \
-    remove_redundant
+from .utils import (
+    RRT_RESTARTS,
+    RRT_SMOOTHING,
+    INF,
+    irange,
+    elapsed_time,
+    compute_path_cost,
+    default_selector,
+    get_pairs,
+    remove_redundant,
+)
 
-def direct_path(start, goal, extend_fn, collision_fn, sweep_collision_fn=None, **kwargs):
+
+def direct_path(
+    start, goal, extend_fn, collision_fn, sweep_collision_fn=None, **kwargs
+):
     """direct linear path connnecting start and goal using the extension fn.
 
     :param start: Start configuration - conf
@@ -32,20 +44,38 @@ def direct_path(start, goal, extend_fn, collision_fn, sweep_collision_fn=None, *
     if any(collision_fn(q) for q in default_selector(path)):
         return None
     if sweep_collision_fn is not None:
-        if any(sweep_collision_fn(q0, q1) for q0, q1 in default_selector(get_pairs(path))):
+        if any(
+            sweep_collision_fn(q0, q1) for q0, q1 in default_selector(get_pairs(path))
+        ):
             return None
     return path
+
 
 def check_direct(start, goal, extend_fn, collision_fn, **kwargs):
     if any(collision_fn(q) for q in [start, goal]):
         return False
     return direct_path(start, goal, extend_fn, collision_fn, **kwargs)
 
+
 #################################################################
 
-def random_restarts(solve_fn, start, goal, distance_fn, sample_fn, extend_fn, collision_fn,
-                    restarts=RRT_RESTARTS, smooth=RRT_SMOOTHING,
-                    success_cost=0., max_time=INF, max_solutions=1, verbose=True, **kwargs):
+
+def random_restarts(
+    solve_fn,
+    start,
+    goal,
+    distance_fn,
+    sample_fn,
+    extend_fn,
+    collision_fn,
+    restarts=RRT_RESTARTS,
+    smooth=RRT_SMOOTHING,
+    success_cost=0.0,
+    max_time=INF,
+    max_solutions=1,
+    verbose=True,
+    **kwargs
+):
     """Apply random restarts to a given planning algorithm to obtain multiple solutions.
 
     Parameters
@@ -99,13 +129,27 @@ def random_restarts(solve_fn, start, goal, distance_fn, sample_fn, extend_fn, co
     for attempt in irange(restarts + 1):
         if (len(solutions) >= max_solutions) or (elapsed_time(start_time) >= max_time):
             break
-        attempt_time = (max_time - elapsed_time(start_time))
-        path, nodes = solve_fn(start, goal, distance_fn, sample_fn, extend_fn, collision_fn,
-                        max_time=attempt_time, **kwargs)
+        attempt_time = max_time - elapsed_time(start_time)
+        path, nodes = solve_fn(
+            start,
+            goal,
+            distance_fn,
+            sample_fn,
+            extend_fn,
+            collision_fn,
+            max_time=attempt_time,
+            **kwargs
+        )
         if path is None:
             continue
-        path = smooth_path(path, extend_fn, collision_fn, max_smooth_iterations=smooth,
-                           max_time=max_time-elapsed_time(start_time), **kwargs)
+        path = smooth_path(
+            path,
+            extend_fn,
+            collision_fn,
+            max_smooth_iterations=smooth,
+            max_time=max_time - elapsed_time(start_time),
+            **kwargs
+        )
         solutions.append(path)
         nodess.append(nodes)
         if compute_path_cost(path, distance_fn) < success_cost:
@@ -115,22 +159,48 @@ def random_restarts(solve_fn, start, goal, distance_fn, sample_fn, extend_fn, co
         # print('[After Smoothness] Solutions ({}): {} | Time: {:.3f}'.format(len(solutions), [(len(path), round(compute_path_cost(
         #     path, distance_fn), 3)) for path in solutions], elapsed_time(start_time)))
         if path == None:
-            print('[Before Smoothness]|Length -1')
-            print('[After Smoothness]|Length -1')
-        else :
-            print('[After Smoothness]|Length {}'.format(len(path)))
+            print("[Before Smoothness]|Length -1")
+            print("[After Smoothness]|Length -1")
+        else:
+            print("[After Smoothness]|Length {}".format(len(path)))
         sys.stdout.flush()
     return solutions, nodess
 
-def solve_and_smooth(solve_fn, q1, q2, distance_fn, sample_fn, extend_fn, collision_fn, **kwargs):
-    """plan and smooth without random restarting.
-    """
-    return random_restarts(solve_fn, q1, q2, distance_fn, sample_fn, extend_fn, collision_fn, restarts=0, **kwargs)
+
+def solve_and_smooth(
+    solve_fn, q1, q2, distance_fn, sample_fn, extend_fn, collision_fn, **kwargs
+):
+    """plan and smooth without random restarting."""
+    return random_restarts(
+        solve_fn,
+        q1,
+        q2,
+        distance_fn,
+        sample_fn,
+        extend_fn,
+        collision_fn,
+        restarts=0,
+        **kwargs
+    )
+
 
 #################################################################
 
-def solve_motion_plan(start, goal, distance_fn, sample_fn, extend_fn, collision_fn, algorithm='birrt',
-          max_time=INF, max_iterations=INF, num_samples=100, smooth=None, **kwargs):
+
+def solve_motion_plan(
+    start,
+    goal,
+    distance_fn,
+    sample_fn,
+    extend_fn,
+    collision_fn,
+    algorithm="birrt",
+    max_time=INF,
+    max_iterations=INF,
+    num_samples=100,
+    smooth=None,
+    **kwargs
+):
     # TODO: allow distance_fn to be skipped
     # TODO: return lambda function
     start_time = time.time()
@@ -138,29 +208,98 @@ def solve_motion_plan(start, goal, distance_fn, sample_fn, extend_fn, collision_
     if path is not None:
         return path
     max_time -= elapsed_time(start_time)
-    if algorithm == 'prm':
-        path = prm(start, goal, distance_fn, sample_fn, extend_fn, collision_fn,
-                   num_samples=num_samples, **kwargs)
-    elif algorithm == 'lazy_prm':
-        path = lazy_prm(start, goal, sample_fn, extend_fn, collision_fn,
-                        num_samples=num_samples, max_time=max_time, **kwargs)[0]
-    elif algorithm == 'rrt':
-        path = rrt(start, goal, distance_fn, sample_fn, extend_fn, collision_fn,
-                   max_iterations=max_iterations, max_time=max_time, **kwargs)
-    elif algorithm == 'rrt_connect':
-        path = rrt_connect(start, goal, distance_fn, sample_fn, extend_fn, collision_fn,
-                           max_iterations=max_iterations, max_time=max_time, **kwargs)
-    elif algorithm == 'birrt':
+    if algorithm == "prm":
+        path = prm(
+            start,
+            goal,
+            distance_fn,
+            sample_fn,
+            extend_fn,
+            collision_fn,
+            num_samples=num_samples,
+            **kwargs
+        )
+    elif algorithm == "lazy_prm":
+        path = lazy_prm(
+            start,
+            goal,
+            sample_fn,
+            extend_fn,
+            collision_fn,
+            num_samples=num_samples,
+            max_time=max_time,
+            **kwargs
+        )[0]
+    elif algorithm == "rrt":
+        path = rrt(
+            start,
+            goal,
+            distance_fn,
+            sample_fn,
+            extend_fn,
+            collision_fn,
+            max_iterations=max_iterations,
+            max_time=max_time,
+            **kwargs
+        )
+    elif algorithm == "rrt_connect":
+        path = rrt_connect(
+            start,
+            goal,
+            distance_fn,
+            sample_fn,
+            extend_fn,
+            collision_fn,
+            max_iterations=max_iterations,
+            max_time=max_time,
+            **kwargs
+        )
+    elif algorithm == "birrt":
         # TODO: checks the straight-line twice
-        path = birrt(start, goal, distance_fn, sample_fn, extend_fn, collision_fn,
-                     max_iterations=max_iterations, max_time=max_time, smooth=None, **kwargs) # restarts=2
-    elif algorithm == 'rrt_star':
-        path = rrt_star(start, goal, distance_fn, sample_fn, extend_fn, collision_fn, radius=1,
-                        max_iterations=max_iterations, max_time=max_time, **kwargs)
-    elif algorithm == 'lattice':
-        path = lattice(start, goal, extend_fn, collision_fn, distance_fn=distance_fn, max_time=INF, **kwargs)
+        path = birrt(
+            start,
+            goal,
+            distance_fn,
+            sample_fn,
+            extend_fn,
+            collision_fn,
+            max_iterations=max_iterations,
+            max_time=max_time,
+            smooth=None,
+            **kwargs
+        )  # restarts=2
+    elif algorithm == "rrt_star":
+        path = rrt_star(
+            start,
+            goal,
+            distance_fn,
+            sample_fn,
+            extend_fn,
+            collision_fn,
+            radius=1,
+            max_iterations=max_iterations,
+            max_time=max_time,
+            **kwargs
+        )
+    elif algorithm == "lattice":
+        path = lattice(
+            start,
+            goal,
+            extend_fn,
+            collision_fn,
+            distance_fn=distance_fn,
+            max_time=INF,
+            **kwargs
+        )
     else:
         raise NotImplementedError(algorithm)
     if path:
         path = remove_redundant(path)
-    return smooth_path(path, extend_fn, collision_fn, max_smooth_iterations=smooth, max_time=max_time-elapsed_time(start_time), **kwargs)
+    return smooth_path(
+        path,
+        extend_fn,
+        collision_fn,
+        max_smooth_iterations=smooth,
+        max_time=max_time - elapsed_time(start_time),
+        **kwargs
+    )

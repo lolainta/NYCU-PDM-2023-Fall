@@ -21,13 +21,16 @@ except NameError:
 # https://stackoverflow.com/questions/4178614/suppressing-output-of-module-calling-outside-library
 # https://stackoverflow.com/questions/4675728/redirect-stdout-to-a-file-in-python/22434262#22434262
 
+
 class HideOutput(object):
-    '''
+    """
     A context manager that block stdout for its scope, usage:
     with HideOutput():
         os.system('ls -l')
-    '''
+    """
+
     DEFAULT_ENABLE = True
+
     def __init__(self, enable=None):
         if enable is None:
             enable = self.DEFAULT_ENABLE
@@ -58,7 +61,7 @@ class HideOutput(object):
             self._newstdout = os.dup(1)
             os.dup2(self._devnull, 1)
             os.close(self._devnull)
-            sys.stdout = os.fdopen(self._newstdout, 'w')
+            sys.stdout = os.fdopen(self._newstdout, "w")
         except OSError:
             # "OSError: [Errno 24] Too many open files"
             self.enable = False
@@ -72,17 +75,24 @@ class HideOutput(object):
             sys.stdout = self._origstdout
             sys.stdout.flush()
             os.dup2(self._oldstdout_fno, 1)
-            os.close(self._oldstdout_fno) # Added
+            os.close(self._oldstdout_fno)  # Added
         except OSError:
             # "OSError: [Errno 24] Too many open files"
             return
 
+
 #####################################
 
-MouseEvent = namedtuple('MouseEvent', ['eventType', 'mousePosX', 'mousePosY', 'buttonIndex', 'buttonState'])
+MouseEvent = namedtuple(
+    "MouseEvent", ["eventType", "mousePosX", "mousePosY", "buttonIndex", "buttonState"]
+)
+
 
 def get_mouse_events():
-    return list(MouseEvent(*event) for event in p.getMouseEvents(physicsClientId=CLIENT))
+    return list(
+        MouseEvent(*event) for event in p.getMouseEvents(physicsClientId=CLIENT)
+    )
+
 
 def update_viewer():
     # https://docs.python.org/2/library/select.html
@@ -96,8 +106,9 @@ def update_viewer():
     # disable_gravity()
 
 
-def wait_for_duration(duration): #, dt=0):
+def wait_for_duration(duration):  # , dt=0):
     from pybullet_planning.utils.debug_utils import elapsed_time
+
     t0 = time.time()
     while elapsed_time(t0) <= duration:
         update_viewer()
@@ -112,17 +123,17 @@ def simulate_for_duration(duration):
 def get_time_step():
     # {'gravityAccelerationX', 'useRealTimeSimulation', 'gravityAccelerationZ', 'numSolverIterations',
     # 'gravityAccelerationY', 'numSubSteps', 'fixedTimeStep'}
-    return p.getPhysicsEngineParameters(physicsClientId=CLIENT)['fixedTimeStep']
+    return p.getPhysicsEngineParameters(physicsClientId=CLIENT)["fixedTimeStep"]
 
 
 def enable_separating_axis_test():
     p.setPhysicsEngineParameter(enableSAT=1, physicsClientId=CLIENT)
-    #p.setCollisionFilterPair()
-    #p.setCollisionFilterGroupMask()
-    #p.setInternalSimFlags()
+    # p.setCollisionFilterPair()
+    # p.setCollisionFilterGroupMask()
+    # p.setInternalSimFlags()
     # enableFileCaching: Set to 0 to disable file caching, such as .obj wavefront file loading
-    #p.getAPIVersion() # TODO: check that API is up-to-date
-    #p.isNumpyEnabled()
+    # p.getAPIVersion() # TODO: check that API is up-to-date
+    # p.isNumpyEnabled()
 
 
 def simulate_for_sim_duration(sim_duration, real_dt=0, frequency=INF):
@@ -132,24 +143,30 @@ def simulate_for_sim_duration(sim_duration, real_dt=0, frequency=INF):
     last_print = 0
     while sim_time < sim_duration:
         if frequency < (sim_time - last_print):
-            print('Sim time: {:.3f} | Real time: {:.3f}'.format(sim_time, elapsed_time(t0)))
+            print(
+                "Sim time: {:.3f} | Real time: {:.3f}".format(
+                    sim_time, elapsed_time(t0)
+                )
+            )
             last_print = sim_time
         step_simulation()
         sim_time += sim_dt
         time.sleep(real_dt)
 
 
-def wait_for_user(message='Press enter to continue'):
+def wait_for_user(message="Press enter to continue"):
     from pybullet_planning.interfaces.env_manager.simulation import has_gui
+
     if has_gui() and is_darwin():
         # OS X doesn't multi-thread the OpenGL visualizer
-        #wait_for_interrupt()
+        # wait_for_interrupt()
         return threaded_input(message)
     return user_input(message)
 
 
 def wait_if_gui(*args, **kwargs):
     from pybullet_planning.interfaces.env_manager.simulation import has_gui
+
     if has_gui():
         wait_for_user(*args, **kwargs)
 
@@ -167,7 +184,7 @@ def wait_for_interrupt(max_time=np.inf):
     """
     Hold Ctrl to move the camera as well as zoom
     """
-    print('Press Ctrl-C to continue')
+    print("Press Ctrl-C to continue")
     try:
         wait_for_duration(max_time)
     except KeyboardInterrupt:
@@ -194,22 +211,25 @@ def threaded_input(*args, **kwargs):
     # http://openrave.org/docs/0.8.2/_modules/openravepy/misc/#SetViewerUserThread
     # https://github.com/bulletphysics/bullet3/blob/master/examples/pybullet/examples/userData.py
     # https://github.com/bulletphysics/bullet3/tree/master/examples/ExampleBrowser
-    #from pybullet_utils import bullet_client
-    #from pybullet_utils.bullet_client import BulletClient
-    #server = bullet_client.BulletClient(connection_mode=p.SHARED_MEMORY_SERVER) # GUI_SERVER
-    #sim_id = p.connect(p.GUI)
-    #print(dir(server))
-    #client = bullet_client.BulletClient(connection_mode=p.SHARED_MEMORY)
-    #sim_id = p.connect(p.SHARED_MEMORY)
+    # from pybullet_utils import bullet_client
+    # from pybullet_utils.bullet_client import BulletClient
+    # server = bullet_client.BulletClient(connection_mode=p.SHARED_MEMORY_SERVER) # GUI_SERVER
+    # sim_id = p.connect(p.GUI)
+    # print(dir(server))
+    # client = bullet_client.BulletClient(connection_mode=p.SHARED_MEMORY)
+    # sim_id = p.connect(p.SHARED_MEMORY)
 
-    #threading = __import__('threading')
+    # threading = __import__('threading')
     import threading
+
     data = []
-    thread = threading.Thread(target=lambda: data.append(user_input(*args, **kwargs)), args=[])
+    thread = threading.Thread(
+        target=lambda: data.append(user_input(*args, **kwargs)), args=[]
+    )
     thread.start()
-    #threading.enumerate()
-    #thread_id = 0
-    #for tid, tobj in threading._active.items():
+    # threading.enumerate()
+    # thread_id = 0
+    # for tid, tobj in threading._active.items():
     #    if tobj is thread:
     #        thread_id = tid
     #        break

@@ -3,11 +3,11 @@ from random import random
 from .utils import irange, argmin, RRT_ITERATIONS, INF
 
 __all__ = [
-    'rrt',
+    "rrt",
 ]
 
-class TreeNode(object):
 
+class TreeNode(object):
     def __init__(self, config, parent=None):
         self.config = config
         self.parent = parent
@@ -35,7 +35,8 @@ class TreeNode(object):
         #         env, self.config, self.parent.config, color=color)
 
     def __str__(self):
-        return 'TreeNode(' + str(self.config) + ')'
+        return "TreeNode(" + str(self.config) + ")"
+
     __repr__ = __str__
 
 
@@ -45,8 +46,19 @@ def configs(nodes):
     return list(map(lambda n: n.config, nodes))
 
 
-def rrt(start, goal_sample, distance_fn, sample_fn, extend_fn, collision_fn,
-        goal_test=lambda q: False, max_iterations=RRT_ITERATIONS, goal_probability=.2, max_time=INF, draw_fn=None):
+def rrt(
+    start,
+    goal_sample,
+    distance_fn,
+    sample_fn,
+    extend_fn,
+    collision_fn,
+    goal_test=lambda q: False,
+    max_iterations=RRT_ITERATIONS,
+    goal_probability=0.2,
+    max_time=INF,
+    draw_fn=None,
+):
     if collision_fn(start):
         return None
     if not callable(goal_sample):

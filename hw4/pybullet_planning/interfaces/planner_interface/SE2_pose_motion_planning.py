@@ -6,26 +6,46 @@ from pybullet_planning.motion_planners import birrt, direct_path
 #####################################
 # SE(2) pose motion planning
 
+
 def get_base_difference_fn():
-    from pybullet_planning.interfaces.env_manager.pose_transformation import circular_difference
+    from pybullet_planning.interfaces.env_manager.pose_transformation import (
+        circular_difference,
+    )
+
     def fn(q2, q1):
         dx, dy = np.array(q2[:2]) - np.array(q1[:2])
         dtheta = circular_difference(q2[2], q1[2])
         return (dx, dy, dtheta)
+
     return fn
 
-def get_base_distance_fn(weights=1*np.ones(3)):
+
+def get_base_distance_fn(weights=1 * np.ones(3)):
     difference_fn = get_base_difference_fn()
+
     def fn(q1, q2):
         difference = np.array(difference_fn(q2, q1))
         return np.sqrt(np.dot(weights, difference * difference))
+
     return fn
 
-def plan_base_motion(body, end_conf, base_limits, obstacles=[], direct=False,
-                     weights=1*np.ones(3), resolutions=0.05*np.ones(3),
-                     max_distance=MAX_DISTANCE, **kwargs):
+
+def plan_base_motion(
+    body,
+    end_conf,
+    base_limits,
+    obstacles=[],
+    direct=False,
+    weights=1 * np.ones(3),
+    resolutions=0.05 * np.ones(3),
+    max_distance=MAX_DISTANCE,
+    **kwargs
+):
     from pybullet_planning.interfaces.robots.collision import pairwise_collision
-    from pybullet_planning.interfaces.robots.body import set_base_values, get_base_values
+    from pybullet_planning.interfaces.robots.body import (
+        set_base_values,
+        get_base_values,
+    )
 
     def sample_fn():
         x, y = np.random.uniform(*base_limits)
@@ -40,14 +60,17 @@ def plan_base_motion(body, end_conf, base_limits, obstacles=[], direct=False,
         n = int(np.max(steps)) + 1
         q = q1
         for i in range(n):
-            q = tuple((1. / (n - i)) * np.array(difference_fn(q2, q)) + q)
+            q = tuple((1.0 / (n - i)) * np.array(difference_fn(q2, q)) + q)
             yield q
             # TODO: should wrap these joints
 
     def collision_fn(q):
         # TODO: update this function
         set_base_values(body, q)
-        return any(pairwise_collision(body, obs, max_distance=max_distance) for obs in obstacles)
+        return any(
+            pairwise_collision(body, obs, max_distance=max_distance)
+            for obs in obstacles
+        )
 
     start_conf = get_base_values(body)
     if collision_fn(start_conf):
@@ -58,5 +81,6 @@ def plan_base_motion(body, end_conf, base_limits, obstacles=[], direct=False,
         return None
     if direct:
         return direct_path(start_conf, end_conf, extend_fn, collision_fn)
-    return birrt(start_conf, end_conf, distance_fn,
-                 sample_fn, extend_fn, collision_fn, **kwargs)
+    return birrt(
+        start_conf, end_conf, distance_fn, sample_fn, extend_fn, collision_fn, **kwargs
+    )

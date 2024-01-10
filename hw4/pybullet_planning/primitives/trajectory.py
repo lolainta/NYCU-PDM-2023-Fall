@@ -1,7 +1,17 @@
-from pybullet_planning.interfaces import get_relative_pose, get_link_subtree, clone_body, set_static, get_link_pose, \
-    set_pose, multiply, get_pose, invert
+from pybullet_planning.interfaces import (
+    get_relative_pose,
+    get_link_subtree,
+    clone_body,
+    set_static,
+    get_link_pose,
+    set_pose,
+    multiply,
+    get_pose,
+    invert,
+)
 
 ##############################################
+
 
 class EndEffector(object):
     """a convenient class for creating and manipulating an end effector
@@ -9,6 +19,7 @@ class EndEffector(object):
     Note: the end effector needs to be modeled in the robot's URDF.
 
     """
+
     def __init__(self, robot, ee_link, tool_link, **kwargs):
         """[summary]
 
@@ -30,6 +41,7 @@ class EndEffector(object):
         set_static(self.body)
         # for link in get_all_links(tool_body):
         #    set_color(tool_body, np.zeros(4), link)
+
     def get_tool_pose(self, get_cloned_pose=True):
         """[summary]
 
@@ -59,4 +71,4 @@ class EndEffector(object):
         return self.tool_from_ee
 
     def __repr__(self):
-        return '{}({}, {})'.format(self.__class__.__name__, self.robot, self.body)
+        return "{}({}, {})".format(self.__class__.__name__, self.robot, self.body)

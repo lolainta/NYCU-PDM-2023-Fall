@@ -18,26 +18,33 @@ def quat_distance(a: np.ndarray, b: np.ndarray):
     if not a.shape == b.shape and a.shape == 4:
         raise AssertionError("quat_distance(): wrong shape of points")
     elif not (np.linalg.norm(a) == 1.0 and np.linalg.norm(b) == 1.0):
-        warnings.warn("quat_distance(): vector(s) without unitary norm {} , {}".format(np.linalg.norm(a), np.linalg.norm(b)))
+        warnings.warn(
+            "quat_distance(): vector(s) without unitary norm {} , {}".format(
+                np.linalg.norm(a), np.linalg.norm(b)
+            )
+        )
 
-    inner_quat_prod = a[0]*b[0] + a[1]*b[1] + a[2]*b[2] + a[3]*b[3]
-    dist = 1 - inner_quat_prod*inner_quat_prod
+    inner_quat_prod = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3]
+    dist = 1 - inner_quat_prod * inner_quat_prod
     return dist
 
 
 def quat_multiplication(a: np.ndarray, b: np.ndarray):
-
     if not a.shape == b.shape and a.shape == 4:
         raise AssertionError("quat_distance(): wrong shape of points")
     elif not (np.linalg.norm(a) == 1.0 and np.linalg.norm(b) == 1.0):
-        warnings.warn("quat_distance(): vector(s) without unitary norm {} , {}".format(np.linalg.norm(a), np.linalg.norm(b)))
+        warnings.warn(
+            "quat_distance(): vector(s) without unitary norm {} , {}".format(
+                np.linalg.norm(a), np.linalg.norm(b)
+            )
+        )
 
     x1, y1, z1, w1 = a[0], a[1], a[2], a[3]
     x2, y2, z2, w2 = b[0], b[1], b[2], b[3]
 
-    x12 = w1*x2 + x1*w2 + y1*z2 - z1*y2
-    y12 = w1*y2 - x1*z2 + y1*w2 + z1*x2
-    z12 = w1*z2 + x1*y2 - y1*x2 + z1*w2
+    x12 = w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2
+    y12 = w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2
+    z12 = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
     w12 = w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2
 
     return np.array([x12, y12, z12, w12])
@@ -62,16 +69,16 @@ def quaternion_to_axis_angle(quat: tuple):
 
 
 def floor_vec(vec: tuple):
-    r_vec = [0]*len(vec)
+    r_vec = [0] * len(vec)
     for i, v in enumerate(vec):
         r_vec[i] = np.sign(v) * m.floor(m.fabs(v) * 100) / 100
     return r_vec
 
 
 def sph_coord(x: float, y: float, z: float):
-    ro = m.sqrt(x*x + y*y + z*z)
-    theta = m.acos(z/ro)
-    phi = m.atan2(y,x)
+    ro = m.sqrt(x * x + y * y + z * z)
+    theta = m.acos(z / ro)
+    phi = m.atan2(y, x)
     return [ro, theta, phi]
 
 

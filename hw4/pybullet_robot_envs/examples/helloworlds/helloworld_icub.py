@@ -3,6 +3,7 @@
 # LGPL-2.1+ license. See the accompanying LICENSE file for details.
 
 import os, inspect
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(os.path.dirname(currentdir))
 os.sys.path.insert(0, parentdir)
@@ -17,7 +18,6 @@ import math as m
 
 
 def main():
-
     # ------------------------ #
     # --- Setup simulation --- #
     # ------------------------ #
@@ -27,7 +27,7 @@ def main():
     p.resetDebugVisualizerCamera(1.8, 120, -50, [0.0, -0.0, -0.0])
     p.resetSimulation()
     p.setPhysicsEngineParameter(numSolverIterations=150)
-    sim_timestep = 1.0/240
+    sim_timestep = 1.0 / 240
     p.setTimeStep(sim_timestep)
 
     # Load plane contained in pybullet_data
@@ -40,15 +40,20 @@ def main():
     # --- Setup robot --- #
     # ------------------- #
 
-    robot = iCubHandsEnv(physics_client_id, use_IK=1, control_arm='r')
+    robot = iCubHandsEnv(physics_client_id, use_IK=1, control_arm="r")
     p.stepSimulation()
 
     # -------------------------- #
     # --- Load other objects --- #
     # -------------------------- #
 
-    p.loadURDF(os.path.join(pybullet_data.getDataPath(), "table/table.urdf"), [1, 0.0, 0.0])
-    p.loadURDF(os.path.join(ycb_objects.getDataPath(), 'YcbFoamBrick', "model.urdf"), [0.5, -0.03, 0.7])
+    p.loadURDF(
+        os.path.join(pybullet_data.getDataPath(), "table/table.urdf"), [1, 0.0, 0.0]
+    )
+    p.loadURDF(
+        os.path.join(ycb_objects.getDataPath(), "YcbFoamBrick", "model.urdf"),
+        [0.5, -0.03, 0.7],
+    )
 
     # Run the world for a bit
     for _ in range(100):
@@ -66,7 +71,7 @@ def main():
 
     # 1: go above the object
     pos_1 = [0.49, 0.0, 0.8]
-    quat_1 = p.getQuaternionFromEuler([0, 0, m.pi/2])
+    quat_1 = p.getQuaternionFromEuler([0, 0, m.pi / 2])
 
     robot.apply_action(pos_1 + list(quat_1), max_vel=5)
     robot.pre_grasp()
@@ -77,7 +82,7 @@ def main():
 
     # 2: turn hand above the object
     pos_2 = [0.485, 0.0, 0.72]
-    quat_2 = p.getQuaternionFromEuler([m.pi/2, 1/3*m.pi, -m.pi])
+    quat_2 = p.getQuaternionFromEuler([m.pi / 2, 1 / 3 * m.pi, -m.pi])
 
     robot.apply_action(pos_2 + list(quat_2), max_vel=5)
     robot.pre_grasp()
@@ -87,7 +92,28 @@ def main():
         time.sleep(sim_timestep)
 
     # 3: close fingers
-    pos_cl = [0, 0.6, 0.8, 1.0, 0,  0.6, 0.8, 1.0, 0,  0.6, 0.8, 1.0, 0,  0.6, 0.8, 1.0, 1.57, 0.8, 0.5, 0.8]
+    pos_cl = [
+        0,
+        0.6,
+        0.8,
+        1.0,
+        0,
+        0.6,
+        0.8,
+        1.0,
+        0,
+        0.6,
+        0.8,
+        1.0,
+        0,
+        0.6,
+        0.8,
+        1.0,
+        1.57,
+        0.8,
+        0.5,
+        0.8,
+    ]
 
     robot.grasp(pos_cl)
 
@@ -97,7 +123,7 @@ def main():
 
     # 4: go up
     pos_4 = [0.45, 0, 0.9]
-    quat_4 = p.getQuaternionFromEuler([m.pi/2, 1/3*m.pi, -m.pi])
+    quat_4 = p.getQuaternionFromEuler([m.pi / 2, 1 / 3 * m.pi, -m.pi])
 
     robot.apply_action(pos_4 + list(quat_4), max_vel=5)
     robot.grasp(pos_cl)
@@ -108,7 +134,7 @@ def main():
 
     # 5: go right
     pos_5 = [0.3, -0.2, 0.9]
-    quat_5 = p.getQuaternionFromEuler([0.0, 0.0, m.pi/2])
+    quat_5 = p.getQuaternionFromEuler([0.0, 0.0, m.pi / 2])
 
     robot.apply_action(pos_5 + list(quat_5), max_vel=5)
     robot.grasp(pos_cl)
@@ -141,7 +167,14 @@ def main():
         joint_type = joint_info[2]
 
         if joint_type is p.JOINT_REVOLUTE or joint_type is p.JOINT_PRISMATIC:
-            param_ids.append(p.addUserDebugParameter(joint_name.decode("utf-8"), joint_info[8], joint_info[9], joint_poses[i]))
+            param_ids.append(
+                p.addUserDebugParameter(
+                    joint_name.decode("utf-8"),
+                    joint_info[8],
+                    joint_info[9],
+                    joint_poses[i],
+                )
+            )
             joint_ids.append(i)
             idx += 1
 
@@ -149,11 +182,13 @@ def main():
         new_pos = []
         for i in param_ids:
             new_pos.append(p.readUserDebugParameter(i))
-        p.setJointMotorControlArray(robot.robot_id, joint_ids, p.POSITION_CONTROL, targetPositions=new_pos)
+        p.setJointMotorControlArray(
+            robot.robot_id, joint_ids, p.POSITION_CONTROL, targetPositions=new_pos
+        )
 
         p.stepSimulation()
         time.sleep(sim_timestep)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

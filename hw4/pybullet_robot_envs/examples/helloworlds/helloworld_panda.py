@@ -21,7 +21,9 @@ import numpy as np
 
 
 def render(robot):
-    pos, rot, _, _, _, _ = p.getLinkState(robot.robot_id, linkIndex=robot.end_eff_idx, computeForwardKinematics=True)
+    pos, rot, _, _, _, _ = p.getLinkState(
+        robot.robot_id, linkIndex=robot.end_eff_idx, computeForwardKinematics=True
+    )
     rot_matrix = p.getMatrixFromQuaternion(rot)
     rot_matrix = np.array(rot_matrix).reshape(3, 3)
 
@@ -40,13 +42,32 @@ def render(robot):
 
     view_matrix = p.computeViewMatrix(camera_eye_pos, camera_target_position, up_vector)
 
-    proj_matrix = (2.0 * fx / width, 0.0, 0.0, 0.0,
-                   0.0, 2.0 * fy / height, 0.0, 0.0,
-                   1.0 - 2.0 * cx / width, 2.0 * cy / height - 1.0, (far + near) / (near - far), -1.0,
-                   0.0, 0.0, 2.0 * far * near / (near - far), 0.0)
+    proj_matrix = (
+        2.0 * fx / width,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        2.0 * fy / height,
+        0.0,
+        0.0,
+        1.0 - 2.0 * cx / width,
+        2.0 * cy / height - 1.0,
+        (far + near) / (near - far),
+        -1.0,
+        0.0,
+        0.0,
+        2.0 * far * near / (near - far),
+        0.0,
+    )
 
-    p.getCameraImage(width=width, height=height, viewMatrix=view_matrix, projectionMatrix=proj_matrix,
-                     renderer=p.ER_BULLET_HARDWARE_OPENGL)  # renderer=self._p.ER_TINY_RENDERER)
+    p.getCameraImage(
+        width=width,
+        height=height,
+        viewMatrix=view_matrix,
+        projectionMatrix=proj_matrix,
+        renderer=p.ER_BULLET_HARDWARE_OPENGL,
+    )  # renderer=self._p.ER_TINY_RENDERER)
 
 
 def main():
@@ -79,8 +100,12 @@ def main():
     # --- Load other objects --- #
     # -------------------------- #
 
-    p.loadURDF(os.path.join(pybullet_data.getDataPath(), "table/table.urdf"), [1, 0.0, 0.0])
-    obj_id = p.loadURDF(os.path.join(pybullet_data.getDataPath(), "lego/lego.urdf"), [0.5, 0.0, 0.8])
+    p.loadURDF(
+        os.path.join(pybullet_data.getDataPath(), "table/table.urdf"), [1, 0.0, 0.0]
+    )
+    obj_id = p.loadURDF(
+        os.path.join(pybullet_data.getDataPath(), "lego/lego.urdf"), [0.5, 0.0, 0.8]
+    )
     # obj_id = p.loadURDF(os.path.join(ycb_objects.getDataPath(), 'YcbBanana', "model.urdf"), [0.5, 0.0, 0.8])
 
     # Run the world for a bit
@@ -166,18 +191,26 @@ def main():
         if joint_type is p.JOINT_REVOLUTE or joint_type is p.JOINT_PRISMATIC:
             joint_ids.append(i)
             param_ids.append(
-                p.addUserDebugParameter(joint_name.decode("utf-8"), joint_info[8], joint_info[9], joint_poses[i]))
+                p.addUserDebugParameter(
+                    joint_name.decode("utf-8"),
+                    joint_info[8],
+                    joint_info[9],
+                    joint_poses[i],
+                )
+            )
             idx += 1
 
     while True:
         new_pos = []
         for i in param_ids:
             new_pos.append(p.readUserDebugParameter(i))
-        p.setJointMotorControlArray(robot.robot_id, joint_ids, p.POSITION_CONTROL, targetPositions=new_pos)
+        p.setJointMotorControlArray(
+            robot.robot_id, joint_ids, p.POSITION_CONTROL, targetPositions=new_pos
+        )
 
         p.stepSimulation()
         time.sleep(sim_timestep)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

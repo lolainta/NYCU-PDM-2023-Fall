@@ -2,10 +2,11 @@
 # This software may be modified and distributed under the terms of the
 # LGPL-2.1+ license. See the accompanying LICENSE file for details.
 
-import os,inspect
+import os, inspect
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-print ("current_dir=" + currentdir)
-os.sys.path.insert(0,currentdir)
+print("current_dir=" + currentdir)
+os.sys.path.insert(0, currentdir)
 
 import gym
 from gym import spaces
@@ -22,21 +23,21 @@ import time
 
 
 class pandaPushGymEnv(gym.Env):
-    metadata = {'render.modes': ['human', 'rgb_array'],
-    'video.frames_per_second': 50 }
+    metadata = {"render.modes": ["human", "rgb_array"], "video.frames_per_second": 50}
 
-    def __init__(self,
-                 numControlledJoints=7,
-                 use_IK=0,
-                 action_repeat=1,
-                 obj_name=get_objects_list()[1],
-                 renders=False,
-                 max_steps=1000,
-                 obj_pose_rnd_std=0.0,
-                 tg_pose_rnd_std=0.0,
-                 includeVelObs=True):
-
-        self._timeStep = 1. / 240.
+    def __init__(
+        self,
+        numControlledJoints=7,
+        use_IK=0,
+        action_repeat=1,
+        obj_name=get_objects_list()[1],
+        renders=False,
+        max_steps=1000,
+        obj_pose_rnd_std=0.0,
+        tg_pose_rnd_std=0.0,
+        includeVelObs=True,
+    ):
+        self._timeStep = 1.0 / 240.0
 
         self.action_dim = []
         self._use_IK = use_IK
@@ -57,21 +58,34 @@ class pandaPushGymEnv(gym.Env):
             self._physics_client_id = p.connect(p.SHARED_MEMORY)
             if self._physics_client_id < 0:
                 self._physics_client_id = p.connect(p.GUI)
-            p.resetDebugVisualizerCamera(2.5, 90, -60, [0.52, -0.2, -0.33], physicsClientId=self._physics_client_id)
+            p.resetDebugVisualizerCamera(
+                2.5,
+                90,
+                -60,
+                [0.52, -0.2, -0.33],
+                physicsClientId=self._physics_client_id,
+            )
         else:
             self._physics_client_id = p.connect(p.DIRECT)
 
         # Load robot
-        self._robot = pandaEnv(self._physics_client_id, use_IK=self._use_IK, joint_action_space=numControlledJoints)
+        self._robot = pandaEnv(
+            self._physics_client_id,
+            use_IK=self._use_IK,
+            joint_action_space=numControlledJoints,
+        )
 
         # Load world environment
-        self._world = WorldEnv(self._physics_client_id,
-                                    obj_name=obj_name, obj_pose_rnd_std=obj_pose_rnd_std,
-                                    workspace_lim=self._robot.get_workspace())
+        self._world = WorldEnv(
+            self._physics_client_id,
+            obj_name=obj_name,
+            obj_pose_rnd_std=obj_pose_rnd_std,
+            workspace_lim=self._robot.get_workspace(),
+        )
 
         # limit robot workspace to table plane
         workspace = self._robot.get_workspace()
-        workspace[2][0] = self._world.get_table_height()-0.2
+        workspace[2][0] = self._world.get_table_height() - 0.2
         self._robot.set_workspace(workspace)
 
         # Define spaces
@@ -92,13 +106,15 @@ class pandaPushGymEnv(gym.Env):
             observation_high.extend([el[1]])
 
         # Configure the observation space
-        observation_space = spaces.Box(np.array(observation_low), np.array(observation_high), dtype='float32')
+        observation_space = spaces.Box(
+            np.array(observation_low), np.array(observation_high), dtype="float32"
+        )
 
         # Configure action space
         action_dim = self._robot.get_action_dim()
         action_bound = 1
         action_high = np.array([action_bound] * action_dim)
-        action_space = spaces.Box(-action_high, action_high, dtype='float32')
+        action_space = spaces.Box(-action_high, action_high, dtype="float32")
 
         return observation_space, action_space
 
@@ -119,7 +135,9 @@ class pandaPushGymEnv(gym.Env):
 
         # --- reset simulation --- #
         p.resetSimulation(physicsClientId=self._physics_client_id)
-        p.setPhysicsEngineParameter(numSolverIterations=150, physicsClientId=self._physics_client_id)
+        p.setPhysicsEngineParameter(
+            numSolverIterations=150, physicsClientId=self._physics_client_id
+        )
         p.setTimeStep(self._timeStep, physicsClientId=self._physics_client_id)
         self._env_step_counter = 0
 
@@ -165,18 +183,23 @@ class pandaPushGymEnv(gym.Env):
         # ----------------------------------------- #
         # --- Object pose wrt hand c.o.m. frame --- #
         # ----------------------------------------- #
-        inv_hand_pos, inv_hand_orn = p.invertTransform(robot_observation[:3],
-                                                       p.getQuaternionFromEuler(robot_observation[3:6]))
+        inv_hand_pos, inv_hand_orn = p.invertTransform(
+            robot_observation[:3], p.getQuaternionFromEuler(robot_observation[3:6])
+        )
 
-        obj_pos_in_hand, obj_orn_in_hand = p.multiplyTransforms(inv_hand_pos, inv_hand_orn, world_observation[:3],
-                                                                p.getQuaternionFromEuler(world_observation[3:6]))
+        obj_pos_in_hand, obj_orn_in_hand = p.multiplyTransforms(
+            inv_hand_pos,
+            inv_hand_orn,
+            world_observation[:3],
+            p.getQuaternionFromEuler(world_observation[3:6]),
+        )
 
         obj_euler_in_hand = p.getEulerFromQuaternion(obj_orn_in_hand)
 
         self._observation.extend(list(obj_pos_in_hand))
         self._observation.extend(list(obj_euler_in_hand))
         observation_lim.extend([[-0.5, 0.5], [-0.5, 0.5], [-0.5, 0.5]])
-        observation_lim.extend([[0, 2*m.pi], [0, 2*m.pi], [0, 2*m.pi]])
+        observation_lim.extend([[0, 2 * m.pi], [0, 2 * m.pi], [0, 2 * m.pi]])
 
         # ------------------- #
         # --- Target pose --- #
@@ -207,16 +230,19 @@ class pandaPushGymEnv(gym.Env):
 
                     # constraint rotation inside limits
                     eu_lim = self._robot.get_rotation_lim()
-                    new_action[3:6] = [min(eu_lim[0][1], max(eu_lim[0][0], new_action[3])),
-                                       min(eu_lim[1][1], max(eu_lim[1][0], new_action[4])),
-                                       min(eu_lim[2][1], max(eu_lim[2][0], new_action[5]))]
+                    new_action[3:6] = [
+                        min(eu_lim[0][1], max(eu_lim[0][0], new_action[3])),
+                        min(eu_lim[1][1], max(eu_lim[1][0], new_action[4])),
+                        min(eu_lim[2][1], max(eu_lim[2][0], new_action[5])),
+                    ]
 
                 # constraint position inside workspace
                 ws_lim = self._robot.get_workspace()
                 new_action[:3] = [
                     min(ws_lim[0][1], max(ws_lim[0][0], new_action[0])),
                     min(ws_lim[1][1], max(ws_lim[1][0], new_action[1])),
-                    min(ws_lim[2][1], max(ws_lim[2][0], new_action[2]))]
+                    min(ws_lim[2][1], max(ws_lim[2][0], new_action[2])),
+                ]
 
                 # Update hand_pose to new pose
                 self._hand_pose = new_action
@@ -224,7 +250,9 @@ class pandaPushGymEnv(gym.Env):
             else:
                 action *= 0.05
 
-                n_tot_joints = len(self._robot._joint_name_to_ids.items())  # arm  + fingers
+                n_tot_joints = len(
+                    self._robot._joint_name_to_ids.items()
+                )  # arm  + fingers
                 n_joints_to_control = self._robot.get_action_dim()  # only arm
                 joint_curr_pos = robot_obs[-n_tot_joints:]
                 new_action = np.add(joint_curr_pos[:n_joints_to_control], action)
@@ -242,7 +270,6 @@ class pandaPushGymEnv(gym.Env):
             self._env_step_counter += 1
 
     def step(self, action):
-
         # apply action on the robot
         self.apply_action(action)
 
@@ -264,8 +291,9 @@ class pandaPushGymEnv(gym.Env):
         if mode != "rgb_array":
             return np.array([])
 
-        base_pos, _ = self._p.getBasePositionAndOrientation(self._robot.robot_id,
-                                                            physicsClientId=self._physics_client_id)
+        base_pos, _ = self._p.getBasePositionAndOrientation(
+            self._robot.robot_id, physicsClientId=self._physics_client_id
+        )
 
         cam_dist = 1.3
         cam_yaw = 180
@@ -273,23 +301,32 @@ class pandaPushGymEnv(gym.Env):
         RENDER_HEIGHT = 640
         RENDER_WIDTH = 480
 
-        view_matrix = self._p.computeViewMatrixFromYawPitchRoll(cameraTargetPosition=base_pos,
-                                                                distance=cam_dist,
-                                                                yaw=cam_yaw,
-                                                                pitch=cam_pitch,
-                                                                roll=0,
-                                                                upAxisIndex=2,
-                                                                physicsClientId=self._physics_client_id)
+        view_matrix = self._p.computeViewMatrixFromYawPitchRoll(
+            cameraTargetPosition=base_pos,
+            distance=cam_dist,
+            yaw=cam_yaw,
+            pitch=cam_pitch,
+            roll=0,
+            upAxisIndex=2,
+            physicsClientId=self._physics_client_id,
+        )
 
-        proj_matrix = self._p.computeProjectionMatrixFOV(fov=60, aspect=float(RENDER_WIDTH) / RENDER_HEIGHT,
-                                                         nearVal=0.1, farVal=100.0,
-                                                         physicsClientId=self._physics_client_id)
+        proj_matrix = self._p.computeProjectionMatrixFOV(
+            fov=60,
+            aspect=float(RENDER_WIDTH) / RENDER_HEIGHT,
+            nearVal=0.1,
+            farVal=100.0,
+            physicsClientId=self._physics_client_id,
+        )
 
-        (_, _, px, _, _) = self._p.getCameraImage(width=RENDER_WIDTH, height=RENDER_HEIGHT,
-                                                  viewMatrix=view_matrix,
-                                                  projectionMatrix=proj_matrix,
-                                                  renderer=self._p.ER_BULLET_HARDWARE_OPENGL,
-                                                  physicsClientId=self._physics_client_id)
+        (_, _, px, _, _) = self._p.getCameraImage(
+            width=RENDER_WIDTH,
+            height=RENDER_HEIGHT,
+            viewMatrix=view_matrix,
+            projectionMatrix=proj_matrix,
+            renderer=self._p.ER_BULLET_HARDWARE_OPENGL,
+            physicsClientId=self._physics_client_id,
+        )
         # renderer=self._p.ER_TINY_RENDERER)
 
         rgb_array = np.array(px, dtype=np.uint8)
@@ -304,8 +341,8 @@ class pandaPushGymEnv(gym.Env):
 
         if d <= self._target_dist_min:
             self.terminated = 1
-            print('------------->>> success!')
-            print('final reward')
+            print("------------->>> success!")
+            print("final reward")
             print(self._compute_reward())
 
             return np.float32(1.0)
@@ -327,7 +364,7 @@ class pandaPushGymEnv(gym.Env):
         # print(reward)
         # print("--------")
         if d2 <= self._target_dist_min:
-            reward = np.float32(1000.0) + (100 - d2*80)
+            reward = np.float32(1000.0) + (100 - d2 * 80)
         return reward
 
     def sample_tg_pose(self, obj_pos):
@@ -360,17 +397,36 @@ class pandaPushGymEnv(gym.Env):
         return pose
 
     def change_physics_params(self, obj_mass, obj_friction, obj_dumping, robot_damping):
-        p.changeDynamics(self._world.obj_id, linkIndex=-1, mass=obj_mass, lateralFriction=obj_friction,
-                         linearDamping=obj_dumping)
+        p.changeDynamics(
+            self._world.obj_id,
+            linkIndex=-1,
+            mass=obj_mass,
+            lateralFriction=obj_friction,
+            linearDamping=obj_dumping,
+        )
 
         for i in range(self._robot._num_dof_no_fingers):
-            p.changeDynamics(self._robot.robot_id, linkIndex=i, linearDamping=robot_damping)
+            p.changeDynamics(
+                self._robot.robot_id, linkIndex=i, linearDamping=robot_damping
+            )
         return 0
 
     def debug_gui(self):
-        p.addUserDebugLine(self._target_pose, [self._target_pose[0] + 0.1, self._target_pose[1], self._target_pose[2]], [1, 0, 0],
-                           physicsClientId=self._physics_client_id)
-        p.addUserDebugLine(self._target_pose, [self._target_pose[0], self._target_pose[1] + 0.1, self._target_pose[2]], [0, 1, 0],
-                           physicsClientId=self._physics_client_id)
-        p.addUserDebugLine(self._target_pose, [self._target_pose[0], self._target_pose[1], self._target_pose[2] + 0.1], [0, 0, 1],
-                           physicsClientId=self._physics_client_id)
+        p.addUserDebugLine(
+            self._target_pose,
+            [self._target_pose[0] + 0.1, self._target_pose[1], self._target_pose[2]],
+            [1, 0, 0],
+            physicsClientId=self._physics_client_id,
+        )
+        p.addUserDebugLine(
+            self._target_pose,
+            [self._target_pose[0], self._target_pose[1] + 0.1, self._target_pose[2]],
+            [0, 1, 0],
+            physicsClientId=self._physics_client_id,
+        )
+        p.addUserDebugLine(
+            self._target_pose,
+            [self._target_pose[0], self._target_pose[1], self._target_pose[2] + 0.1],
+            [0, 0, 1],
+            physicsClientId=self._physics_client_id,
+        )

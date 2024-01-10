@@ -3,27 +3,43 @@
 # LGPL-2.1+ license. See the accompanying LICENSE file for details.
 
 import os, inspect
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 os.sys.path.insert(0, currentdir)
 
 import pybullet as p
 from pybullet_robot_envs.envs.ur5_envs.robot_data import ur5
 from robot_data.grippers import Suction
-from hw4_utils.bullet_utils import pose_7d_to_6d, get_pose_from_matrix, get_matrix_from_pose
+from hw4_utils.bullet_utils import (
+    pose_7d_to_6d,
+    get_pose_from_matrix,
+    get_matrix_from_pose,
+)
 from scipy.spatial.transform import Rotation as R
 import numpy as np
 import math as m
 
-class ur5Env:
 
+class ur5Env:
     initial_positions = {
-        'shoulder_pan_joint': -1.0*m.pi, 'shoulder_lift_joint': -0.5*m.pi, 'elbow_joint': 0.5*m.pi,
-        'wrist_1_joint': -0.5*m.pi, 'wrist_2_joint': -0.5*m.pi, 'wrist_3_joint': 0.0,
+        "shoulder_pan_joint": -1.0 * m.pi,
+        "shoulder_lift_joint": -0.5 * m.pi,
+        "elbow_joint": 0.5 * m.pi,
+        "wrist_1_joint": -0.5 * m.pi,
+        "wrist_2_joint": -0.5 * m.pi,
+        "wrist_3_joint": 0.0,
     }
 
-    def __init__(self, physicsClientId, use_IK=0, base_position=(-0.2, 0.13, 0.6), control_orientation=1, control_eu_or_quat=0,
-                 joint_action_space=6, includeVelObs=True):
-
+    def __init__(
+        self,
+        physicsClientId,
+        use_IK=0,
+        base_position=(-0.2, 0.13, 0.6),
+        control_orientation=1,
+        control_eu_or_quat=0,
+        joint_action_space=6,
+        includeVelObs=True,
+    ):
         self._physics_client_id = physicsClientId
         self._use_IK = use_IK
         self._control_orientation = control_orientation
@@ -36,7 +52,7 @@ class ur5Env:
         self._workspace_lim = [[0.3, 0.65], [-0.3, 0.3], [0.9, 1.5]]
         self._eu_lim = [[-m.pi, m.pi], [-m.pi, m.pi], [-m.pi, m.pi]]
 
-        self.end_eff_idx = 10   # 8
+        self.end_eff_idx = 10  # 8
 
         self._home_hand_pose = []
 
@@ -48,38 +64,59 @@ class ur5Env:
 
     def reset(self):
         # Load robot model
-        flags = p.URDF_ENABLE_CACHED_GRAPHICS_SHAPES | p.URDF_USE_INERTIA_FROM_FILE | p.URDF_USE_SELF_COLLISION
-        self.robot_id = p.loadURDF(os.path.join(ur5.get_data_path(), "ur5.urdf"),
-                                   basePosition=self._base_position, useFixedBase=True, flags=flags,
-                                   physicsClientId=self._physics_client_id)
+        flags = (
+            p.URDF_ENABLE_CACHED_GRAPHICS_SHAPES
+            | p.URDF_USE_INERTIA_FROM_FILE
+            | p.URDF_USE_SELF_COLLISION
+        )
+        self.robot_id = p.loadURDF(
+            os.path.join(ur5.get_data_path(), "ur5.urdf"),
+            basePosition=self._base_position,
+            useFixedBase=True,
+            flags=flags,
+            physicsClientId=self._physics_client_id,
+        )
 
         assert self.robot_id is not None, "Failed to load the ur5 model"
-        
+
         self.ee = Suction(ur5.get_data_path(), self.robot_id, 9)
-        
+
         # self.ee.release()
 
         # reset joints to home position
-        num_joints = p.getNumJoints(self.robot_id, physicsClientId=self._physics_client_id)
+        num_joints = p.getNumJoints(
+            self.robot_id, physicsClientId=self._physics_client_id
+        )
         idx = 0
         for i in range(num_joints):
-            joint_info = p.getJointInfo(self.robot_id, i, physicsClientId=self._physics_client_id)
+            joint_info = p.getJointInfo(
+                self.robot_id, i, physicsClientId=self._physics_client_id
+            )
             joint_name = joint_info[1].decode("UTF-8")
             joint_type = joint_info[2]
 
-            if joint_type is p.JOINT_REVOLUTE :
+            if joint_type is p.JOINT_REVOLUTE:
                 assert joint_name in self.initial_positions.keys()
 
                 self._joint_name_to_ids[joint_name] = i
 
-                p.resetJointState(self.robot_id, i, self.initial_positions[joint_name], physicsClientId=self._physics_client_id)
-                p.setJointMotorControl2(self.robot_id, i, p.POSITION_CONTROL,
-                                        targetPosition=self.initial_positions[joint_name],
-                                        positionGain=0.2, velocityGain=1.0,
-                                        physicsClientId=self._physics_client_id)
+                p.resetJointState(
+                    self.robot_id,
+                    i,
+                    self.initial_positions[joint_name],
+                    physicsClientId=self._physics_client_id,
+                )
+                p.setJointMotorControl2(
+                    self.robot_id,
+                    i,
+                    p.POSITION_CONTROL,
+                    targetPosition=self.initial_positions[joint_name],
+                    positionGain=0.2,
+                    velocityGain=1.0,
+                    physicsClientId=self._physics_client_id,
+                )
 
                 idx += 1
-        
 
         self.ll, self.ul, self.jr, self.rs = self.get_joint_ranges()
 
@@ -94,7 +131,11 @@ class ur5Env:
         lower_limits, upper_limits, joint_ranges, rest_poses = [], [], [], []
 
         for joint_name in self._joint_name_to_ids.keys():
-            jointInfo = p.getJointInfo(self.robot_id, self._joint_name_to_ids[joint_name], physicsClientId=self._physics_client_id)
+            jointInfo = p.getJointInfo(
+                self.robot_id,
+                self._joint_name_to_ids[joint_name],
+                physicsClientId=self._physics_client_id,
+            )
 
             ll, ul = jointInfo[8:10]
             jr = ul - ll
@@ -194,7 +235,6 @@ class ur5Env:
 
     #     return (p0_contact > 0) + (p1_contact > 0), (p0_f_mean, p1_f_mean)
     def apply_action(self, action, max_vel=-1, ik_solver=None):
-        
         if self._use_IK:
             # ------------------ #
             # --- IK control --- #
@@ -209,8 +249,8 @@ class ur5Env:
             # # --- Constraint end-effector pose inside the workspace --- #
 
             dx, dy, dz = action[:3]
-            new_pos = [dx, dy,dz]
-                    #    min(self._workspace_lim[2][1], max(self._workspace_lim[2][0], dz))]
+            new_pos = [dx, dy, dz]
+            #    min(self._workspace_lim[2][1], max(self._workspace_lim[2][0], dz))]
 
             # # if orientation is not under control, keep it fixed
             # if not self._control_orientation:
@@ -232,22 +272,29 @@ class ur5Env:
 
             # # otherwise, use current orientation
             # else:
-            new_quat_orn = p.getLinkState(self.robot_id, self.end_eff_idx, physicsClientId=self._physics_client_id)[1]
-                # print(new_quat_orn)
-                # exit()
+            new_quat_orn = p.getLinkState(
+                self.robot_id, self.end_eff_idx, physicsClientId=self._physics_client_id
+            )[1]
+            # print(new_quat_orn)
+            # exit()
             # new_quat_orn = (0.7071067690849304, -0.7071067690849304, -5.193567798045251e-12, 5.193622875515613e-12)
             # --- compute joint positions with IK --- #
             num_q = p.getNumJoints(self.robot_id)
             q_states = p.getJointStates(self.robot_id, range(0, num_q))
             # current_jointPoses = np.asarray([x[0] for x in q_states][2:8])
-            
-            jointPoses = p.calculateInverseKinematics(self.robot_id, self.end_eff_idx, new_pos, new_quat_orn,
-                                                    maxNumIterations=1000,
-                                                    residualThreshold=.001,
-                                                    physicsClientId=self._physics_client_id)
+
+            jointPoses = p.calculateInverseKinematics(
+                self.robot_id,
+                self.end_eff_idx,
+                new_pos,
+                new_quat_orn,
+                maxNumIterations=1000,
+                residualThreshold=0.001,
+                physicsClientId=self._physics_client_id,
+            )
             # else:
             #     print("using your ik")
-            #     new_pose = new_pos+list(new_quat_orn) 
+            #     new_pose = new_pos+list(new_quat_orn)
             #     jointPoses = ik_solver(self.robot_id, new_pose, base_pos=self._base_position)
             # print("target_ee_pose: ", list(new_pos)+list(new_quat_orn))
             # print("current_joint_state: ", current_jointPoses)
@@ -267,14 +314,16 @@ class ur5Env:
             # jointPoses[2:] = (jointPoses[2:] + np.pi) % (2 * np.pi) - np.pi
             # --- set joint control --- #
             # if max_vel == -1:
-            p.setJointMotorControlArray(bodyUniqueId=self.robot_id,
-                                        jointIndices=self._joint_name_to_ids.values(),
-                                        controlMode=p.POSITION_CONTROL,
-                                        targetPositions=jointPoses,
-                                        positionGains=[0.2] * len(jointPoses),
-                                        velocityGains=[1] * len(jointPoses),
-                                        # positionGains=np.ones(len(self._joint_name_to_ids.values())),
-                                        physicsClientId=self._physics_client_id)
+            p.setJointMotorControlArray(
+                bodyUniqueId=self.robot_id,
+                jointIndices=self._joint_name_to_ids.values(),
+                controlMode=p.POSITION_CONTROL,
+                targetPositions=jointPoses,
+                positionGains=[0.2] * len(jointPoses),
+                velocityGains=[1] * len(jointPoses),
+                # positionGains=np.ones(len(self._joint_name_to_ids.values())),
+                physicsClientId=self._physics_client_id,
+            )
 
             # else:
             #     for i in range(self._num_dof):
@@ -305,12 +354,16 @@ class ur5Env:
         #                                 physicsClientId=self._physics_client_id)
 
     def get_eef_pose(self):
-        ee_pos = p.getLinkState(self.robot_id, self.end_eff_idx, physicsClientId=self._physics_client_id)[0]
-        ee_rot = p.getLinkState(self.robot_id, self.end_eff_idx, physicsClientId=self._physics_client_id)[1]
+        ee_pos = p.getLinkState(
+            self.robot_id, self.end_eff_idx, physicsClientId=self._physics_client_id
+        )[0]
+        ee_rot = p.getLinkState(
+            self.robot_id, self.end_eff_idx, physicsClientId=self._physics_client_id
+        )[1]
         ee_pose = ee_pos + ee_rot
-        
+
         return ee_pose
-    
+
     def debug_gui(self):
         ws = self._workspace_lim
         p1 = [ws[0][0], ws[1][0], ws[2][0]]  # xmin,ymin
@@ -318,22 +371,85 @@ class ur5Env:
         p3 = [ws[0][1], ws[1][1], ws[2][0]]  # xmax,ymax
         p4 = [ws[0][0], ws[1][1], ws[2][0]]  # xmin,ymax
 
-        p.addUserDebugLine(p1, p2, lineColorRGB=[0, 0, 1], lineWidth=2.0, lifeTime=0, physicsClientId=self._physics_client_id)
-        p.addUserDebugLine(p2, p3, lineColorRGB=[0, 0, 1], lineWidth=2.0, lifeTime=0, physicsClientId=self._physics_client_id)
-        p.addUserDebugLine(p3, p4, lineColorRGB=[0, 0, 1], lineWidth=2.0, lifeTime=0, physicsClientId=self._physics_client_id)
-        p.addUserDebugLine(p4, p1, lineColorRGB=[0, 0, 1], lineWidth=2.0, lifeTime=0, physicsClientId=self._physics_client_id)
+        p.addUserDebugLine(
+            p1,
+            p2,
+            lineColorRGB=[0, 0, 1],
+            lineWidth=2.0,
+            lifeTime=0,
+            physicsClientId=self._physics_client_id,
+        )
+        p.addUserDebugLine(
+            p2,
+            p3,
+            lineColorRGB=[0, 0, 1],
+            lineWidth=2.0,
+            lifeTime=0,
+            physicsClientId=self._physics_client_id,
+        )
+        p.addUserDebugLine(
+            p3,
+            p4,
+            lineColorRGB=[0, 0, 1],
+            lineWidth=2.0,
+            lifeTime=0,
+            physicsClientId=self._physics_client_id,
+        )
+        p.addUserDebugLine(
+            p4,
+            p1,
+            lineColorRGB=[0, 0, 1],
+            lineWidth=2.0,
+            lifeTime=0,
+            physicsClientId=self._physics_client_id,
+        )
 
-        p.addUserDebugLine([0, 0, 0], [0.1, 0, 0], [1, 0, 0], parentObjectUniqueId=self.robot_id,
-                           parentLinkIndex=-1, physicsClientId=self._physics_client_id)
-        p.addUserDebugLine([0, 0, 0], [0, 0.1, 0], [0, 1, 0], parentObjectUniqueId=self.robot_id,
-                           parentLinkIndex=-1, physicsClientId=self._physics_client_id)
-        p.addUserDebugLine([0, 0, 0], [0, 0, 0.1], [0, 0, 1], parentObjectUniqueId=self.robot_id,
-                           parentLinkIndex=-1, physicsClientId=self._physics_client_id)
+        p.addUserDebugLine(
+            [0, 0, 0],
+            [0.1, 0, 0],
+            [1, 0, 0],
+            parentObjectUniqueId=self.robot_id,
+            parentLinkIndex=-1,
+            physicsClientId=self._physics_client_id,
+        )
+        p.addUserDebugLine(
+            [0, 0, 0],
+            [0, 0.1, 0],
+            [0, 1, 0],
+            parentObjectUniqueId=self.robot_id,
+            parentLinkIndex=-1,
+            physicsClientId=self._physics_client_id,
+        )
+        p.addUserDebugLine(
+            [0, 0, 0],
+            [0, 0, 0.1],
+            [0, 0, 1],
+            parentObjectUniqueId=self.robot_id,
+            parentLinkIndex=-1,
+            physicsClientId=self._physics_client_id,
+        )
 
-        p.addUserDebugLine([0, 0, 0], [0.1, 0, 0], [1, 0, 0], parentObjectUniqueId=self.robot_id,
-                           parentLinkIndex=self.end_eff_idx, physicsClientId=self._physics_client_id)
-        p.addUserDebugLine([0, 0, 0], [0, 0.1, 0], [0, 1, 0], parentObjectUniqueId=self.robot_id,
-                           parentLinkIndex=self.end_eff_idx, physicsClientId=self._physics_client_id)
-        p.addUserDebugLine([0, 0, 0], [0, 0, 0.1], [0, 0, 1], parentObjectUniqueId=self.robot_id,
-                           parentLinkIndex=self.end_eff_idx, physicsClientId=self._physics_client_id)
-    
+        p.addUserDebugLine(
+            [0, 0, 0],
+            [0.1, 0, 0],
+            [1, 0, 0],
+            parentObjectUniqueId=self.robot_id,
+            parentLinkIndex=self.end_eff_idx,
+            physicsClientId=self._physics_client_id,
+        )
+        p.addUserDebugLine(
+            [0, 0, 0],
+            [0, 0.1, 0],
+            [0, 1, 0],
+            parentObjectUniqueId=self.robot_id,
+            parentLinkIndex=self.end_eff_idx,
+            physicsClientId=self._physics_client_id,
+        )
+        p.addUserDebugLine(
+            [0, 0, 0],
+            [0, 0, 0.1],
+            [0, 0, 1],
+            parentObjectUniqueId=self.robot_id,
+            parentLinkIndex=self.end_eff_idx,
+            physicsClientId=self._physics_client_id,
+        )

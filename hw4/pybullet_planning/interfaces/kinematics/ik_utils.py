@@ -4,6 +4,7 @@ import pybullet as p
 
 from pybullet_planning.utils import CLIENT
 
+
 def inverse_kinematics_helper(robot, link, target_pose, null_space=None):
     (target_point, target_quat) = target_pose
     assert target_point is not None
@@ -12,36 +13,62 @@ def inverse_kinematics_helper(robot, link, target_pose, null_space=None):
             assert target_quat is not None
             lower, upper, ranges, rest = null_space
 
-            kinematic_conf = p.calculateInverseKinematics(robot, link, target_point,
-                                                          lowerLimits=lower, upperLimits=upper, jointRanges=ranges, restPoses=rest,
-                                                          physicsClientId=CLIENT)
+            kinematic_conf = p.calculateInverseKinematics(
+                robot,
+                link,
+                target_point,
+                lowerLimits=lower,
+                upperLimits=upper,
+                jointRanges=ranges,
+                restPoses=rest,
+                physicsClientId=CLIENT,
+            )
         elif target_quat is None:
-            #ikSolver = p.IK_DLS or p.IK_SDLS
-            kinematic_conf = p.calculateInverseKinematics(robot, link, target_point,
-                                                          #lowerLimits=ll, upperLimits=ul, jointRanges=jr, restPoses=rp, jointDamping=jd,
-                                                          # solver=ikSolver, maxNumIterations=-1, residualThreshold=-1,
-                                                          physicsClientId=CLIENT)
+            # ikSolver = p.IK_DLS or p.IK_SDLS
+            kinematic_conf = p.calculateInverseKinematics(
+                robot,
+                link,
+                target_point,
+                # lowerLimits=ll, upperLimits=ul, jointRanges=jr, restPoses=rp, jointDamping=jd,
+                # solver=ikSolver, maxNumIterations=-1, residualThreshold=-1,
+                physicsClientId=CLIENT,
+            )
         else:
-            kinematic_conf = p.calculateInverseKinematics(robot, link, target_point, target_quat, physicsClientId=CLIENT)
+            kinematic_conf = p.calculateInverseKinematics(
+                robot, link, target_point, target_quat, physicsClientId=CLIENT
+            )
     except p.error as e:
         kinematic_conf = None
     if (kinematic_conf is None) or any(map(math.isnan, kinematic_conf)):
         return None
     return kinematic_conf
 
-def is_pose_close(pose, target_pose, pos_tolerance=1e-3, ori_tolerance=1e-3*np.pi):
+
+def is_pose_close(pose, target_pose, pos_tolerance=1e-3, ori_tolerance=1e-3 * np.pi):
     (point, quat) = pose
     (target_point, target_quat) = target_pose
-    if (target_point is not None) and not np.allclose(point, target_point, atol=pos_tolerance, rtol=0):
+    if (target_point is not None) and not np.allclose(
+        point, target_point, atol=pos_tolerance, rtol=0
+    ):
         return False
-    if (target_quat is not None) and not (np.allclose(quat, target_quat, atol=ori_tolerance, rtol=0) or \
-            np.allclose(quat, -np.array(target_quat), atol=ori_tolerance, rtol=0)):
+    if (target_quat is not None) and not (
+        np.allclose(quat, target_quat, atol=ori_tolerance, rtol=0)
+        or np.allclose(quat, -np.array(target_quat), atol=ori_tolerance, rtol=0)
+    ):
         return False
     return True
 
-def inverse_kinematics(robot, link, target_pose, max_iterations=200, custom_limits={}, **kwargs):
+
+def inverse_kinematics(
+    robot, link, target_pose, max_iterations=200, custom_limits={}, **kwargs
+):
     from pybullet_planning.interfaces.env_manager.pose_transformation import all_between
-    from pybullet_planning.interfaces.robots import get_movable_joints, set_joint_positions, get_link_pose, get_custom_limits
+    from pybullet_planning.interfaces.robots import (
+        get_movable_joints,
+        set_joint_positions,
+        get_link_pose,
+        get_custom_limits,
+    )
 
     movable_joints = get_movable_joints(robot)
     for iterations in range(max_iterations):
@@ -84,6 +111,7 @@ def snap_sols(sols, q_guess, joint_limits, weights=None, best_sol_only=False):
     joint conf (list)
     """
     import numpy as np
+
     valid_sols = []
     dof = len(q_guess)
     if not weights:
@@ -92,21 +120,26 @@ def snap_sols(sols, q_guess, joint_limits, weights=None, best_sol_only=False):
         assert dof == len(weights)
 
     for sol in sols:
-        test_sol = np.ones(dof)*9999.
+        test_sol = np.ones(dof) * 9999.0
         for i in range(dof):
-            for add_ang in [-2.*np.pi, 0, 2.*np.pi]:
+            for add_ang in [-2.0 * np.pi, 0, 2.0 * np.pi]:
                 test_ang = sol[i] + add_ang
-                if (test_ang <= joint_limits[i][1] and test_ang >= joint_limits[i][0] and \
-                    abs(test_ang - q_guess[i]) < abs(test_sol[i] - q_guess[i])):
+                if (
+                    test_ang <= joint_limits[i][1]
+                    and test_ang >= joint_limits[i][0]
+                    and abs(test_ang - q_guess[i]) < abs(test_sol[i] - q_guess[i])
+                ):
                     test_sol[i] = test_ang
-        if np.all(test_sol != 9999.):
+        if np.all(test_sol != 9999.0):
             valid_sols.append(test_sol.tolist())
 
     if len(valid_sols) == 0:
         return []
 
     if best_sol_only:
-        best_sol_ind = np.argmin(np.sum((weights*(valid_sols - np.array(q_guess)))**2,1))
+        best_sol_ind = np.argmin(
+            np.sum((weights * (valid_sols - np.array(q_guess))) ** 2, 1)
+        )
         return valid_sols[best_sol_ind]
     else:
         return valid_sols

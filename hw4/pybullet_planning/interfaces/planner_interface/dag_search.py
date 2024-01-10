@@ -3,6 +3,7 @@ import warnings
 import numpy as np
 from .ladder_graph import LadderGraph, EdgeBuilder
 
+
 class SolutionRung(object):
     def __init__(self):
         self.distance = []
@@ -16,24 +17,26 @@ class SolutionRung(object):
         return min_dist, min_id
 
     def __len__(self):
-        assert(len(self.distance) == len(self.predecessor))
+        assert len(self.distance) == len(self.predecessor)
         return len(self.distance)
+
     #
     # def __repr__(self):
     #     return 'min dist: {0}, min pred id: {1}'.format(self.extract_min())
 
+
 class DAGSearch(object):
     def __init__(self, graph):
-        assert(isinstance(graph, LadderGraph))
+        assert isinstance(graph, LadderGraph)
         if graph.size == 0:
-            raise ValueError('input ladder graph is empty!')
+            raise ValueError("input ladder graph is empty!")
         self.graph = graph
         self.solution = [SolutionRung() for i in range(graph.get_rungs_size())]
 
         # allocate everything we need
         for i in range(graph.get_rungs_size()):
             n_verts = graph.get_rung_vert_size(i)
-            assert(n_verts > 0)
+            assert n_verts > 0
             self.solution[i].distance = np.zeros(n_verts)
             self.solution[i].predecessor = np.zeros(n_verts, dtype=int)
 
@@ -50,16 +53,16 @@ class DAGSearch(object):
     def run(self):
         """forward cost propagation"""
         if len(self.solution) == 0:
-            raise ValueError('The initial solution is empty!')
+            raise ValueError("The initial solution is empty!")
 
         # TODO: add st_conf cost to SolutionRung 0
         # * first rung init to 0
         self.solution[0].distance = np.zeros(len(self.solution[0]))
         # * other rungs init to inf
         for j in range(1, len(self.solution)):
-            self.solution[j].distance = np.inf*np.ones(len(self.solution[j]))
+            self.solution[j].distance = np.inf * np.ones(len(self.solution[j]))
 
-        for r_id in range(0, len(self.solution)-1):
+        for r_id in range(0, len(self.solution) - 1):
             n_verts = self.graph.get_rung_vert_size(r_id)
             next_r_id = r_id + 1
             # for each vert in the out edge list
@@ -86,7 +89,7 @@ class DAGSearch(object):
     def shortest_path(self):
         if len(self.solution) == 0:
             # TODO: more detailed checks
-            raise ValueError('The initial solution is empty!')
+            raise ValueError("The initial solution is empty!")
 
         _, min_val_id = self.solution[-1].extract_min()
         path_idx = np.zeros(len(self.solution), dtype=int)
