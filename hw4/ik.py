@@ -91,6 +91,19 @@ def your_ik(
     # -------------------------------------------------------------------------------- #
 
     #### your code ####
+    new_pose = np.array(pose_7d_to_6d(new_pose))
+    dh_params = get_ur5_DH_params()
+    for i in range(max_iters):
+        # your_fk(dh_params, tmp_q, base_pos)
+        pose7d, J = your_fk(dh_params, tmp_q, base_pos)
+        pose6d = np.array(pose_7d_to_6d(pose7d))
+        if np.linalg.norm(pose6d[:3] - new_pose[:3]) < stop_thresh:
+            break
+        delta = J.T @ pinv(J @ J.T) @ (new_pose - pose6d)
+        tmp_q += delta
+        for i in range(6):
+            tmp_q[i] = np.clip(tmp_q[i], joint_limits[i][0], joint_limits[i][1])
+
 
     # TODO: update tmp_q
     # tmp_q = ? # may be more than one line
@@ -102,7 +115,7 @@ def your_ik(
 
     ###################
 
-    raise NotImplementedError
+    # raise NotImplementedError
 
     return list(tmp_q)  # 6 DoF
 
